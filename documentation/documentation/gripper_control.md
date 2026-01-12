@@ -4,7 +4,7 @@ This directory contains Python scripts for controlling the Robotiq gripper in RO
 
 ## Available Scripts
 
-### 1. Command-Line Control (`control_gripper.py`)
+### 1. Command-Line Control (`control_gripper`)
 
 A command-line interface for gripper control.
 
@@ -17,22 +17,22 @@ ros2 launch robotiq_description robotiq_control.launch.py
 # In another terminal:
 
 # Activate the gripper
-ros2 run robotiq_app control_gripper.py --activate
+ros2 run robotiq_app control_gripper --activate
 
 # Open the gripper
-ros2 run robotiq_app control_gripper.py --open
+ros2 run robotiq_app control_gripper --open
 
 # Close the gripper
-ros2 run robotiq_app control_gripper.py --close
+ros2 run robotiq_app control_gripper --close
 
 # Move to specific position (0.0 = closed, 0.085 = open for 2F-85)
-ros2 run robotiq_app control_gripper.py --position 0.04
+ros2 run robotiq_app control_gripper --position 0.04
 
 # Set position with custom effort (in Newtons)
-ros2 run robotiq_app control_gripper.py --position 0.02 --effort 100.0
+ros2 run robotiq_app control_gripper --position 0.02 --effort 100.0
 
 # Activate and then open (multiple commands)
-ros2 run robotiq_app control_gripper.py --activate --open
+ros2 run robotiq_app control_gripper --activate --open
 ```
 
 #### Command-Line Options
@@ -111,7 +111,7 @@ sudo apt install python3-tk
 ros2 launch robotiq_description robotiq_control.launch.py
 
 # Terminal 2: Use the control scripts
-ros2 run robotiq_app control_gripper.py --activate --open
+ros2 run robotiq_app control_gripper --activate --open
 # OR
 ros2 run robotiq_app gripper_gui.py
 ```
@@ -184,15 +184,15 @@ The scripts are installed as ROS2 executables, so no chmod is needed when using 
 
 ```bash
 # Open gripper
-ros2 run robotiq_app control_gripper.py --open
+ros2 run robotiq_app control_gripper --open
 
 # Close with medium force to grasp object
-ros2 run robotiq_app control_gripper.py --close --effort 60.0
+ros2 run robotiq_app control_gripper --close --effort 60.0
 
 # (Move arm to new position - not shown)
 
 # Open to release
-ros2 run robotiq_app control_gripper.py --open
+ros2 run robotiq_app control_gripper --open
 ```
 
 ### Example 2: Precision Grip
@@ -203,15 +203,15 @@ import subprocess
 import time
 
 # Activate
-subprocess.run(["ros2", "run", "robotiq_app", "control_gripper.py", "--activate"])
+subprocess.run(["ros2", "run", "robotiq_app", "control_gripper", "--activate"])
 time.sleep(1)
 
 # Open
-subprocess.run(["ros2", "run", "robotiq_app", "control_gripper.py", "--open"])
+subprocess.run(["ros2", "run", "robotiq_app", "control_gripper", "--open"])
 time.sleep(2)
 
 # Precision grip (20mm opening, gentle force)
-subprocess.run(["ros2", "run", "robotiq_app", "control_gripper.py", "--position", "0.020", "--effort", "25.0"])
+subprocess.run(["ros2", "run", "robotiq_app", "control_gripper", "--position", "0.020", "--effort", "25.0"])
 ```
 
 ## ROS2 Topics and Services
