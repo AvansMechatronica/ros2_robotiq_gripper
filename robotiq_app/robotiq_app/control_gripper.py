@@ -1,0 +1,259 @@
+#!/usr/bin/env python3
+"""
+Python script to control the Robotiq gripper using ROS2 action interface.
+
+This script provides a simple interface to:
+- Activate the gripper
+- Open/close the gripper to specific positions
+- Control speed and effort (force)
+"""
+
+import rclpy
+from rclpy.node import Node
+from rclpy.action import ActionClient
+from control_msgs.action import GripperCommand
+from std_srvs.srv import Trigger
+import sys
+import argparse
+
+
+class RobotiqGripperController(Node):
+    """ROS2 node for controlling Robotiq gripper."""
+
+    def __init__(self):
+        super().__init__('robotiq_gripper_controller')
+        
+        # Action client for gripper control
+        self._action_client = ActionClient(
+            self,
+            GripperCommand,
+            '/robotiq_gripper_controller/gripper_cmd'
+        )
+        
+        # Service client for gripper activation
+        self._activation_client = self.create_client(
+            Trigger,
+            '/robotiq_activation_controller/reactivate_gripper'
+        )
+        
+        self.get_logger().info('Robotiq Gripper Controller initialized')
+
+    def activate_gripper(self, timeout_sec=10.0):
+        """
+        Activate (or reactivate) the gripper.
+        
+        Args:
+            timeout_sec: Timeout for service call
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        self.get_logger().info('Waiting for activation service...')
+        
+        if not self._activation_client.wait_for_service(timeout_sec=timeout_sec):
+            self.get_logger().error('Activation service not available')
+            return False
+        
+        request = Trigger.Request()
+        future = self._activation_client.call_async(request)
+        
+        rclpy.spin_until_future_complete(self, future, timeout_sec=timeout_sec)
+        
+        if future.result() is not None:
+            response = future.result()
+            if response.success:
+                self.get_logger().info(f'Gripper activated: {response.message}')
+                return True
+            else:
+                self.get_logger().error(f'Activation failed: {response.message}')
+                return False
+        else:
+            self.get_logger().error('Service call failed')
+            return False
+
+    def send_gripper_command(self, position, max_effort=50.0, timeout_sec=10.0):
+        """
+        Send a position command to the gripper.
+        
+        Args:
+            position: Target position in meters
+                     - 0.0 = fully closed
+                     - 0.085 = fully open (for 2F-85)
+                     - 0.140 = fully open (for 2F-140)
+            max_effort: Maximum effort in Newtons (default: 50.0)
+            timeout_sec: Timeout for action
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        self.get_logger().info('Waiting for gripper action server...')
+        
+        if not self._action_client.wait_for_server(timeout_sec=timeout_sec):
+            self.get_logger().error('Gripper action server not available')
+            return False
+        
+        # Create goal
+        goal_msg = GripperCommand.Goal()
+        goal_msg.command.position = position
+        goal_msg.command.max_effort = max_effort
+        
+        self.get_logger().info(f'Sending gripper command: position={position:.4f}m, effort={max_effort}N')
+        
+        # Send goal
+        send_goal_future = self._action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self, send_goal_future)
+        
+        goal_handle = send_goal_future.result()
+        if not goal_handle.accepted:
+            self.get_logger().error('Goal rejected by server')
+            return False
+        
+        self.get_logger().info('Goal accepted, waiting for result...')
+        
+        # Wait for result
+        result_future = goal_handle.get_result_async()
+        rclpy.spin_until_future_complete(self, result_future, timeout_sec=timeout_sec)
+        
+        result = result_future.result()
+        if result:
+            self.get_logger().info(
+                f'Gripper command completed: '
+                f'position={result.result.position:.4f}m, '
+                f'effort={result.result.effort:.2f}N, '
+                f'stalled={result.result.stalled}, '
+                f'reached_goal={result.result.reached_goal}'
+            )
+            return result.result.reached_goal
+        else:
+            self.get_logger().error('Failed to get result')
+            return False
+
+    def open_gripper(self, max_effort=50.0):
+        """
+        Fully open the gripper.
+        
+        Args:
+            max_effort: Maximum effort in Newtons
+            
+        Returns:
+            bool: True if successful
+        """
+        self.get_logger().info('Opening gripper...')
+        # For 2F-85: 0.085m, for 2F-140: 0.140m
+        # Using 0.085 as default (most common model)
+        return self.send_gripper_command(position=0.085, max_effort=max_effort)
+
+    def close_gripper(self, max_effort=50.0):
+        """
+        Fully close the gripper.
+        
+        Args:
+            max_effort: Maximum effort in Newtons
+            
+        Returns:
+            bool: True if successful
+        """
+        self.get_logger().info('Closing gripper...')
+        return self.send_gripper_command(position=0.0, max_effort=max_effort)
+
+    def set_gripper_position(self, position, max_effort=50.0):
+        """
+        Move gripper to a specific position.
+        
+        Args:
+            position: Position in meters (0.0 to 0.085 for 2F-85)
+            max_effort: Maximum effort in Newtons
+            
+        Returns:
+            bool: True if successful
+        """
+        return self.send_gripper_command(position=position, max_effort=max_effort)
+
+
+def main(args=None):
+    """Main function for gripper control."""
+    
+    parser = argparse.ArgumentParser(
+        description='Control Robotiq gripper',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Activate the gripper
+  python3 control_gripper.py --activate
+  
+  # Open the gripper
+  python3 control_gripper.py --open
+  
+  # Close the gripper
+  python3 control_gripper.py --close
+  
+  # Set gripper to specific position (in meters)
+  python3 control_gripper.py --position 0.04
+  
+  # Set position with custom effort
+  python3 control_gripper.py --position 0.02 --effort 100.0
+  
+  # Activate and then open
+  python3 control_gripper.py --activate --open
+        """
+    )
+    
+    parser.add_argument('--activate', action='store_true',
+                       help='Activate (or reactivate) the gripper')
+    parser.add_argument('--open', action='store_true',
+                       help='Open the gripper')
+    parser.add_argument('--close', action='store_true',
+                       help='Close the gripper')
+    parser.add_argument('--position', type=float, metavar='METERS',
+                       help='Move to specific position (0.0=closed, 0.085=open for 2F-85)')
+    parser.add_argument('--effort', type=float, default=50.0, metavar='NEWTONS',
+                       help='Maximum effort in Newtons (default: 50.0)')
+    
+    # Parse known args to allow ROS args
+    parsed_args, ros_args = parser.parse_known_args()
+    
+    # Initialize ROS
+    rclpy.init(args=ros_args)
+    
+    controller = RobotiqGripperController()
+    
+    try:
+        success = True
+        
+        # Activate if requested
+        if parsed_args.activate:
+            if not controller.activate_gripper():
+                success = False
+        
+        # Execute position commands
+        if success:
+            if parsed_args.open:
+                success = controller.open_gripper(max_effort=parsed_args.effort)
+            elif parsed_args.close:
+                success = controller.close_gripper(max_effort=parsed_args.effort)
+            elif parsed_args.position is not None:
+                success = controller.set_gripper_position(
+                    position=parsed_args.position,
+                    max_effort=parsed_args.effort
+                )
+        
+        # If no command specified, show help
+        if not (parsed_args.activate or parsed_args.open or 
+                parsed_args.close or parsed_args.position is not None):
+            parser.print_help()
+            controller.get_logger().info(
+                'No command specified. Use --help for usage information.'
+            )
+        
+        sys.exit(0 if success else 1)
+        
+    except KeyboardInterrupt:
+        controller.get_logger().info('Interrupted by user')
+        sys.exit(0)
+    finally:
+        controller.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
