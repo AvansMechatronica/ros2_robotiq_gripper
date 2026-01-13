@@ -1,18 +1,21 @@
 # Installatie van de Robotiq package
 
+## Clone repository
+
 ```bash
 cd ~/my_ur_ws/src
 git clone https://github.com/AvansMechatronica/ros2_robotiq_gripper.git
 git clone https://github.com/RoverRobotics-forks/serial-ros2.git serial
 
 ```
-
+## Build workspace
 ```
 # Build the workspace
 cd ~/my_ur_ws
 colcon build --symlink-install
 source install/setup.bash
 ```
+# URDF(virtuele gripper)
 
 Voeg een virtuele gripper toe aan je URDF bestand van je project:
 
@@ -37,6 +40,9 @@ Voeg een virtuele gripper toe aan je URDF bestand van je project:
 
 </robot>
 ```
+
+# Starten Controller
+
 
 De grippercontroller kan als volgt gestart worden:
 
