@@ -76,6 +76,13 @@ def generate_launch_description():
             description="Port for communicating with Robotiq hardware",
         )
     )
+    args.append(
+        launch.actions.DeclareLaunchArgument(
+            name="use_fake_hardware",
+            default_value="false",
+            description="Use fake hardware for simulation",
+        )
+    )
 
     robot_description_content = Command(
         [
@@ -83,7 +90,8 @@ def generate_launch_description():
             " ",
             LaunchConfiguration("model"),
             " ",
-            "use_fake_hardware:=false",
+            "use_fake_hardware:=",
+            LaunchConfiguration("use_fake_hardware"),
             " ",
             "com_port:=",
             LaunchConfiguration("com_port"),
@@ -96,14 +104,6 @@ def generate_launch_description():
         )
     }
 
-    update_rate_config_file = PathJoinSubstitution(
-        [
-            description_pkg_share,
-            "config",
-            "robotiq_update_rate.yaml",
-        ]
-    )
-
     controllers_file = "robotiq_controllers.yaml"
     initial_joint_controllers = PathJoinSubstitution(
         [description_pkg_share, "config", controllers_file]
@@ -114,7 +114,6 @@ def generate_launch_description():
         executable="ros2_control_node",
         parameters=[
             robot_description_param,
-            update_rate_config_file,
             initial_joint_controllers,
         ],
     )

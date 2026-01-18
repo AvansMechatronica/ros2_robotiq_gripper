@@ -11,7 +11,7 @@ This script provides a simple interface to:
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from control_msgs.action import GripperCommand
+from control_msgs.action import ParallelGripperCommand
 from std_srvs.srv import Trigger
 import sys
 import argparse
@@ -26,7 +26,7 @@ class RobotiqGripperController(Node):
         # Action client for gripper control
         self._action_client = ActionClient(
             self,
-            GripperCommand,
+            ParallelGripperCommand,
             '/robotiq_gripper_controller/gripper_cmd'
         )
         
@@ -92,10 +92,11 @@ class RobotiqGripperController(Node):
             self.get_logger().error('Gripper action server not available')
             return False
         
-        # Create goal
-        goal_msg = GripperCommand.Goal()
-        goal_msg.command.position = position
-        goal_msg.command.max_effort = max_effort
+        # Create goal for ParallelGripperCommand
+        # ParallelGripperCommand uses JointState which requires arrays
+        goal_msg = ParallelGripperCommand.Goal()
+        goal_msg.command.position = [position]
+        goal_msg.command.effort = [max_effort]
         
         self.get_logger().info(f'Sending gripper command: position={position:.4f}m, effort={max_effort}N')
         
@@ -116,10 +117,14 @@ class RobotiqGripperController(Node):
         
         result = result_future.result()
         if result:
+            # ParallelGripperCommand result has state as JointState with arrays
+            state = result.result.state
+            pos = state.position[0] if state.position else 0.0
+            eff = state.effort[0] if state.effort else 0.0
             self.get_logger().info(
                 f'Gripper command completed: '
-                f'position={result.result.position:.4f}m, '
-                f'effort={result.result.effort:.2f}N, '
+                f'position={pos:.4f}m, '
+                f'effort={eff:.2f}N, '
                 f'stalled={result.result.stalled}, '
                 f'reached_goal={result.result.reached_goal}'
             )
