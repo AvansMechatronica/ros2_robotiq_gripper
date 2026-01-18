@@ -13,7 +13,7 @@ This application provides:
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from control_msgs.action import GripperCommand
+from control_msgs.action import ParallelGripperCommand
 from sensor_msgs.msg import JointState
 from std_srvs.srv import Trigger
 import tkinter as tk
@@ -65,7 +65,7 @@ class RobotiqGripperGUI:
             # Action client for gripper commands
             self.action_client = ActionClient(
                 self.node,
-                GripperCommand,
+                ParallelGripperCommand,
                 '/robotiq_gripper_controller/gripper_cmd'
             )
             
@@ -351,10 +351,14 @@ class RobotiqGripperGUI:
         def activate_thread():
             try:
                 if not self.activation_client.wait_for_service(timeout_sec=5.0):
-                    self.root.after(0, lambda: messagebox.showerror(
-                        "Error", "Activation service not available"
+                    self.root.after(0, lambda: messagebox.showwarning(
+                        "Service Unavailable", 
+                        "Activation service not available.\n\n"
+                        "This is normal when using fake/simulated hardware.\n"
+                        "You can use the gripper controls without activation."
                     ))
-                    self.root.after(0, lambda: self.last_command_success.set("Failed: Service unavailable"))
+                    self.root.after(0, lambda: self.last_command_success.set("N/A (Fake hardware)"))
+                    self.is_activated.set(True)  # Allow usage anyway
                     return
                 
                 request = Trigger.Request()
@@ -416,9 +420,9 @@ class RobotiqGripperGUI:
                     self.root.after(0, lambda: self.last_command_success.set("✗ Server unavailable"))
                     return
                 
-                goal = GripperCommand.Goal()
-                goal.command.position = position
-                goal.command.max_effort = effort
+                goal = ParallelGripperCommand.Goal()
+                goal.command.position = [position]
+                goal.command.effort = [effort]
                 
                 future = self.action_client.send_goal_async(goal)
                 rclpy.spin_until_future_complete(self.node, future, timeout_sec=5.0)
@@ -436,12 +440,14 @@ class RobotiqGripperGUI:
                 
                 result = result_future.result()
                 if result and result.result.reached_goal:
+                    pos = result.result.state.position[0] if result.result.state.position else 0.0
                     self.root.after(0, lambda: self.last_command_success.set(
-                        f"✓ Success - Pos: {result.result.position:.4f}m"
+                        f"✓ Success - Pos: {pos:.4f}m"
                     ))
                 elif result and result.result.stalled:
+                    pos = result.result.state.position[0] if result.result.state.position else 0.0
                     self.root.after(0, lambda: self.last_command_success.set(
-                        f"⚠ Stalled - Pos: {result.result.position:.4f}m"
+                        f"⚠ Stalled - Pos: {pos:.4f}m"
                     ))
                 else:
                     self.root.after(0, lambda: self.last_command_success.set("✗ Failed"))

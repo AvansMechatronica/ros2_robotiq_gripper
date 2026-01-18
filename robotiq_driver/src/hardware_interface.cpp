@@ -318,10 +318,19 @@ void RobotiqGripperHardwareInterface::background_task()
       // (this can be used, for example, to re-run the auto-calibration).
       if (reactivate_gripper_async_cmd_.load())
       {
-        this->driver_->deactivate();
-        this->driver_->activate();
-        reactivate_gripper_async_cmd_.store(false);
-        reactivate_gripper_async_response_.store(true);
+        try
+        {
+          this->driver_->deactivate();
+          this->driver_->activate();
+          reactivate_gripper_async_cmd_.store(false);
+          reactivate_gripper_async_response_.store(true);
+        }
+        catch (std::exception& e)
+        {
+          RCLCPP_ERROR(kLogger, "Gripper activation failed: %s", e.what());
+          reactivate_gripper_async_cmd_.store(false);
+          reactivate_gripper_async_response_.store(false);
+        }
       }
 
       // Write the latest command to the gripper.
