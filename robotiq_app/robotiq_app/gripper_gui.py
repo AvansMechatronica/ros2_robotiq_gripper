@@ -28,7 +28,7 @@ class RobotiqGripperGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Robotiq Gripper Controller")
-        self.root.geometry("600x700")
+        self.root.geometry("600x850")
         self.root.resizable(False, False)
         
         # ROS2 node and clients (initialized later in separate thread)
@@ -198,30 +198,30 @@ class RobotiqGripperGUI:
         control_frame.pack(pady=10, padx=20, fill=tk.BOTH)
         
         # Position slider
-        ttk.Label(control_frame, text="Target Position (meters):", font=("Helvetica", 10)).pack(
+        ttk.Label(control_frame, text="Target Position (radians):", font=("Helvetica", 10)).pack(
             anchor=tk.W, pady=(0, 5)
         )
         
         position_control_frame = ttk.Frame(control_frame)
         position_control_frame.pack(fill=tk.X, pady=5)
         
-        ttk.Label(position_control_frame, text="Closed\n0.000").pack(side=tk.LEFT, padx=5)
+        ttk.Label(position_control_frame, text="Open\n0.0 rad").pack(side=tk.LEFT, padx=5)
         
         self.position_slider = ttk.Scale(
             position_control_frame,
             from_=0.0,
-            to=0.085,
+            to=0.8,
             orient=tk.HORIZONTAL,
             variable=self.target_position,
             command=self.update_position_display
         )
         self.position_slider.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
         
-        ttk.Label(position_control_frame, text="Open\n0.085").pack(side=tk.LEFT, padx=5)
+        ttk.Label(position_control_frame, text="Closed\n0.8 rad").pack(side=tk.LEFT, padx=5)
         
         self.position_value_label = ttk.Label(
             control_frame,
-            text="Target: 0.000 m",
+            text="Target: 0.000 rad",
             font=("Helvetica", 11, "bold"),
             foreground="green"
         )
@@ -276,19 +276,19 @@ class RobotiqGripperGUI:
         ttk.Button(
             buttons_frame,
             text="Fully Open",
-            command=lambda: self.quick_action(0.085, 50.0)
+            command=lambda: self.quick_action(0.0, 50.0)
         ).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
         
         ttk.Button(
             buttons_frame,
             text="Half Open",
-            command=lambda: self.quick_action(0.0425, 50.0)
+            command=lambda: self.quick_action(0.4, 50.0)
         ).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
         
         ttk.Button(
             buttons_frame,
             text="Fully Close",
-            command=lambda: self.quick_action(0.0, 50.0)
+            command=lambda: self.quick_action(0.8, 50.0)
         ).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
         
         # Gentle grip buttons
@@ -302,18 +302,18 @@ class RobotiqGripperGUI:
         ttk.Button(
             gentle_frame,
             text="Gentle Close",
-            command=lambda: self.quick_action(0.0, 20.0)
+            command=lambda: self.quick_action(0.8, 20.0)
         ).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
         
         ttk.Button(
             gentle_frame,
             text="Firm Grip",
-            command=lambda: self.quick_action(0.0, 100.0)
+            command=lambda: self.quick_action(0.8, 100.0)
         ).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
 
     def update_position_display(self, value):
         """Update position value display."""
-        self.position_value_label.config(text=f"Target: {float(value):.4f} m")
+        self.position_value_label.config(text=f"Target: {float(value):.4f} rad")
 
     def update_effort_display(self, value):
         """Update effort value display."""
@@ -322,11 +322,11 @@ class RobotiqGripperGUI:
     def update_gui(self):
         """Update GUI elements periodically."""
         # Update position display
-        self.position_label.config(text=f"{self.current_position:.4f} m")
-        self.position_bar['value'] = self.current_position * 1000  # Convert to mm
+        self.position_label.config(text=f"{self.current_position:.4f} rad")
+        self.position_bar['value'] = (self.current_position / 0.8) * 100  # Convert to percentage
         
         # Update velocity display
-        self.velocity_label.config(text=f"{self.current_velocity:.4f} m/s")
+        self.velocity_label.config(text=f"{self.current_velocity:.4f} rad/s")
         
         # Update status indicator
         if self.is_moving.get():

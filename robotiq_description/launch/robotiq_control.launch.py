@@ -83,6 +83,13 @@ def generate_launch_description():
             description="Use fake hardware for simulation",
         )
     )
+    args.append(
+        launch.actions.DeclareLaunchArgument(
+            name="gripper_closed_position",
+            default_value="0.8",
+            description="Gripper closed position in radians (max joint angle)",
+        )
+    )
 
     robot_description_content = Command(
         [
@@ -95,6 +102,9 @@ def generate_launch_description():
             " ",
             "com_port:=",
             LaunchConfiguration("com_port"),
+            " ",
+            "gripper_closed_position:=",
+            LaunchConfiguration("gripper_closed_position"),
         ]
     )
 

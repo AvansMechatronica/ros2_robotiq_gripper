@@ -17,7 +17,7 @@
         gripper_force_multiplier:=0.5
         gripper_max_speed:=0.150
         gripper_max_force:=235.0
-        gripper_closed_position:=0.7929">
+        gripper_closed_position:=0.8">
 
 
         <!-- ros2 control include -->

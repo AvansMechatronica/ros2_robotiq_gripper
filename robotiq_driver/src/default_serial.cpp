@@ -29,9 +29,13 @@
 #include <serial/serial.h>
 
 #include <robotiq_driver/default_serial.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <sstream>
+#include <iomanip>
 
 namespace robotiq_driver
 {
+const auto kSerialLogger = rclcpp::get_logger("DefaultSerial");
 
 DefaultSerial::DefaultSerial() : serial_{ std::make_unique<serial::Serial>() }
 {
@@ -39,7 +43,9 @@ DefaultSerial::DefaultSerial() : serial_{ std::make_unique<serial::Serial>() }
 
 void DefaultSerial::open()
 {
+  RCLCPP_INFO(kSerialLogger, "Opening serial port: %s at %d baud", get_port().c_str(), get_baudrate());
   serial_->open();
+  RCLCPP_INFO(kSerialLogger, "Serial port opened successfully. Port status: %s", is_open() ? "OPEN" : "CLOSED");
 }
 
 bool DefaultSerial::is_open() const
@@ -55,10 +61,25 @@ void DefaultSerial::close()
 std::vector<uint8_t> DefaultSerial::read(size_t size)
 {
   std::vector<uint8_t> data;
+  RCLCPP_DEBUG(kSerialLogger, "Attempting to read %zu bytes from %s...", size, get_port().c_str());
+  
   size_t bytes_read = serial_->read(data, size);
+  
+  if (bytes_read > 0) {
+    std::stringstream ss;
+    ss << "Read " << bytes_read << " bytes: ";
+    for (size_t i = 0; i < bytes_read; ++i) {
+      ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]) << " ";
+    }
+    RCLCPP_DEBUG(kSerialLogger, "%s", ss.str().c_str());
+  }
+  
   if (bytes_read != size)
   {
     const auto error_msg = "Requested " + std::to_string(size) + " bytes, but got " + std::to_string(bytes_read);
+    RCLCPP_ERROR(kSerialLogger, "Read error on %s: %s (timeout: %ld ms, port open: %s)", 
+                 get_port().c_str(), error_msg.c_str(), get_timeout().count(),
+                 is_open() ? "YES" : "NO");
     THROW(serial::IOException, error_msg.c_str());
   }
   return data;
@@ -66,12 +87,23 @@ std::vector<uint8_t> DefaultSerial::read(size_t size)
 
 void DefaultSerial::write(const std::vector<uint8_t>& data)
 {
+  std::stringstream ss;
+  ss << "Writing " << data.size() << " bytes to " << get_port() << ": ";
+  for (size_t i = 0; i < data.size(); ++i) {
+    ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]) << " ";
+  }
+  RCLCPP_DEBUG(kSerialLogger, "%s", ss.str().c_str());
+  
   std::size_t num_bytes_written = serial_->write(data);
   serial_->flush();
+  
+  RCLCPP_DEBUG(kSerialLogger, "Wrote %zu bytes, flushed output buffer", num_bytes_written);
+  
   if (num_bytes_written != data.size())
   {
     const auto error_msg =
         "Attempted to write " + std::to_string(data.size()) + " bytes, but wrote " + std::to_string(num_bytes_written);
+    RCLCPP_ERROR(kSerialLogger, "Write error: %s", error_msg.c_str());
     THROW(serial::IOException, error_msg.c_str());
   }
 }
