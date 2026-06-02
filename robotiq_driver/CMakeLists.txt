@@ -1,6 +1,6 @@
 # See https://docs.ros.org/en/humble/How-To-Guides/Ament-CMake-Documentation.html
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.10)
 project(robotiq_driver LANGUAGES CXX)
 
 # This module provides installation directories as per the GNU coding standards.
@@ -61,13 +61,13 @@ target_include_directories(
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
-ament_target_dependencies(
+target_link_libraries(
   robotiq_driver
-  hardware_interface
-  pluginlib
-  rclcpp
-  rclcpp_lifecycle
-  serial
+  hardware_interface::hardware_interface
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  rclcpp_lifecycle::rclcpp_lifecycle
+  serial::serial
 )
 
 ###############################################################################

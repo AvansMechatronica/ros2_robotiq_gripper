@@ -76,20 +76,6 @@ def generate_launch_description():
             description="Port for communicating with Robotiq hardware",
         )
     )
-    args.append(
-        launch.actions.DeclareLaunchArgument(
-            name="use_fake_hardware",
-            default_value="false",
-            description="Use fake hardware for simulation",
-        )
-    )
-    args.append(
-        launch.actions.DeclareLaunchArgument(
-            name="gripper_closed_position",
-            default_value="0.8",
-            description="Gripper closed position in radians (max joint angle)",
-        )
-    )
 
     robot_description_content = Command(
         [
@@ -97,14 +83,10 @@ def generate_launch_description():
             " ",
             LaunchConfiguration("model"),
             " ",
-            "use_fake_hardware:=",
-            LaunchConfiguration("use_fake_hardware"),
+            "use_fake_hardware:=true",
             " ",
             "com_port:=",
             LaunchConfiguration("com_port"),
-            " ",
-            "gripper_closed_position:=",
-            LaunchConfiguration("gripper_closed_position"),
         ]
     )
 
@@ -113,6 +95,14 @@ def generate_launch_description():
             robot_description_content, value_type=str
         )
     }
+
+    update_rate_config_file = PathJoinSubstitution(
+        [
+            description_pkg_share,
+            "config",
+            "robotiq_update_rate.yaml",
+        ]
+    )
 
     controllers_file = "robotiq_controllers.yaml"
     initial_joint_controllers = PathJoinSubstitution(
@@ -124,6 +114,7 @@ def generate_launch_description():
         executable="ros2_control_node",
         parameters=[
             robot_description_param,
+            update_rate_config_file,
             initial_joint_controllers,
         ],
     )

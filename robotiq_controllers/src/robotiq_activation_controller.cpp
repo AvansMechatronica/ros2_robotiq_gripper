@@ -121,15 +121,6 @@ bool RobotiqActivationController::reactivateGripper(std_srvs::srv::Trigger::Requ
   // However, note that the value of this result is actually a double, so this should be revised in the future.
   resp->success &= static_cast<bool>(command_interfaces_[REACTIVATE_GRIPPER_RESPONSE].get_optional().value_or(false));
 
-  if (resp->success)
-  {
-    resp->message = "Gripper activated successfully";
-  }
-  else
-  {
-    resp->message = "Gripper activation failed. Check hardware connection and controller logs for details.";
-  }
-
   return resp->success;
 }
 }  // namespace robotiq_controllers

@@ -84,38 +84,26 @@ std::vector<uint8_t> DefaultDriver::send(const std::vector<uint8_t>& request, si
   std::vector<uint8_t> response;
   response.reserve(response_size);
 
-  RCLCPP_DEBUG(kLogger, "Sending command: expecting %zu byte response", response_size);
-
   int retry_count = 0;
   while (retry_count < kMaxRetries)
   {
     try
     {
       serial_->write(request);
-      RCLCPP_DEBUG(kLogger, "Command sent, waiting for response...");
       response = serial_->read(response_size);
-      RCLCPP_DEBUG(kLogger, "Response received successfully");
       break;
     }
     catch (const serial::IOException& e)
     {
       RCLCPP_WARN(kLogger, "Resending the command because the previous attempt (%d of %d) failed: %s", retry_count + 1,
                   kMaxRetries, e.what());
-      RCLCPP_WARN(kLogger, "Serial port: %s, Baudrate: %d, Timeout: %ld ms, Port open: %s",
-                  serial_->get_port().c_str(), serial_->get_baudrate(), 
-                  serial_->get_timeout().count(), serial_->is_open() ? "YES" : "NO");
       retry_count++;
-      if (retry_count < kMaxRetries) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      }
     }
   }
 
   if (retry_count == kMaxRetries)
   {
     RCLCPP_ERROR(kLogger, "Reached maximum retries. Operation failed.");
-    RCLCPP_ERROR(kLogger, "Gripper may not be: 1) Powered ON, 2) Connected to %s, 3) Configured with slave ID 0x%02X, 4) Set to correct baudrate (%d)",
-                 serial_->get_port().c_str(), slave_address_, serial_->get_baudrate());
     return {};
   }
 
@@ -124,21 +112,8 @@ std::vector<uint8_t> DefaultDriver::send(const std::vector<uint8_t>& request, si
 
 bool DefaultDriver::connect()
 {
-  RCLCPP_INFO(kLogger, "Connecting to Robotiq gripper...");
-  RCLCPP_INFO(kLogger, "Port: %s, Baudrate: %d, Slave ID: 0x%02X, Timeout: %ld ms",
-              serial_->get_port().c_str(), serial_->get_baudrate(), 
-              slave_address_, serial_->get_timeout().count());
-  
   serial_->open();
-  bool is_open = serial_->is_open();
-  
-  if (is_open) {
-    RCLCPP_INFO(kLogger, "Serial port opened successfully");
-  } else {
-    RCLCPP_ERROR(kLogger, "Failed to open serial port %s", serial_->get_port().c_str());
-  }
-  
-  return is_open;
+  return serial_->is_open();
 }
 
 void DefaultDriver::disconnect()
@@ -153,18 +128,15 @@ void DefaultDriver::set_slave_address(uint8_t slave_address)
 
 void DefaultDriver::activate()
 {
-  RCLCPP_INFO(kLogger, "Activating gripper (sending activation command)...");
+  RCLCPP_INFO(kLogger, "Activate...");
 
   // set rACT to 1, clear all other registers.
   const auto request = create_write_command(kActionRequestRegister, { 0x0100, 0x0000, 0x0000 });
-  RCLCPP_DEBUG(kLogger, "Activation command prepared, sending to gripper...");
   auto response = send(request, kWriteResponseSize);
   if (response.empty())
   {
-    RCLCPP_ERROR(kLogger, "No response received from gripper during activation");
     throw DriverException{ "Failed to activate the gripper." };
   }
-  RCLCPP_DEBUG(kLogger, "Activation command acknowledged by gripper");
 
   update_status();
   if (gripper_status_ == GripperStatus::COMPLETED)

@@ -5,7 +5,7 @@
 ```bash
 cd ~/my_ur_ws/src
 git clone https://github.com/AvansMechatronica/ros2_robotiq_gripper.git
-git clone https://github.com/RoverRobotics-forks/serial-ros2.git serial
+git clone https://github.com/tylerjw/serial.git -b ros2
 
 ```
 ## Build workspace

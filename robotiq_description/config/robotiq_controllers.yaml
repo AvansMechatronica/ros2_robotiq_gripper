@@ -13,6 +13,14 @@ robotiq_gripper_controller:
   ros__parameters:
     joint: robotiq_85_left_knuckle_joint
 
+    # These must match the additional command interfaces exported by
+    # robotiq_driver/RobotiqGripperHardwareInterface.
+    max_effort_interface: "robotiq_85_left_knuckle_joint/set_gripper_max_effort"
+    max_effort: 50.0   # TODO tune
+
+    max_velocity_interface: "robotiq_85_left_knuckle_joint/set_gripper_max_velocity"
+    max_velocity: 0.5    # TODO tune
+
     # Optional (recommended)
     state_interfaces: ["position", "velocity"]
     allow_stalling: true
