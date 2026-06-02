@@ -9,15 +9,22 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(example_interfaces REQUIRED)
+find_package(control_msgs REQUIRED)
+find_package(robotiq_driver REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 # Add executable
 add_executable(robotiq_controller src/robotiq_controller.cpp)
-ament_target_dependencies(robotiq_controller rclcpp rclcpp_action std_msgs example_interfaces)
+target_include_directories(robotiq_controller PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+ament_target_dependencies(robotiq_controller rclcpp rclcpp_action control_msgs robotiq_driver sensor_msgs)
 
 # Install executable
 install(TARGETS robotiq_controller DESTINATION lib/${PROJECT_NAME})
+install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
