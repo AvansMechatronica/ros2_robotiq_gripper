@@ -9,9 +9,15 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 find_package(control_msgs REQUIRED)
 find_package(robotiq_driver REQUIRED)
 find_package(sensor_msgs REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/SetForce.srv"
+  "srv/SetSpeed.srv"
+)
 
 # Add executable
 add_executable(robotiq_controller src/robotiq_controller.cpp)
@@ -20,11 +26,15 @@ target_include_directories(robotiq_controller PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 ament_target_dependencies(robotiq_controller rclcpp rclcpp_action control_msgs robotiq_driver sensor_msgs)
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(robotiq_controller "${cpp_typesupport_target}")
 
 # Install executable
 install(TARGETS robotiq_controller DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+
+ament_export_dependencies(rosidl_default_runtime)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

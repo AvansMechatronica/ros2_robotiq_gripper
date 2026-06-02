@@ -25,6 +25,16 @@ def generate_launch_description():
         default_value="9",
         description="Modbus slave address",
     )
+    update_rate_arg = DeclareLaunchArgument(
+        "update_rate",
+        default_value="50.0",
+        description="Joint state publish/update rate in Hz",
+    )
+    max_joint_position_arg = DeclareLaunchArgument(
+        "max_joint_position",
+        default_value="0.8",
+        description="Maximum joint position mapped from raw gripper feedback",
+    )
 
     controller_node = Node(
         package="my_robotiq_controller",
@@ -37,6 +47,8 @@ def generate_launch_description():
                 "baudrate": LaunchConfiguration("baudrate"),
                 "timeout": LaunchConfiguration("timeout"),
                 "slave_address": LaunchConfiguration("slave_address"),
+                "update_rate": LaunchConfiguration("update_rate"),
+                "max_joint_position": LaunchConfiguration("max_joint_position"),
             }
         ],
     )
@@ -47,6 +59,8 @@ def generate_launch_description():
             baudrate_arg,
             timeout_arg,
             slave_address_arg,
+            update_rate_arg,
+            max_joint_position_arg,
             controller_node,
         ]
     )
