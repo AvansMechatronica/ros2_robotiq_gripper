@@ -15,7 +15,7 @@ RobotiqControllerNode::RobotiqControllerNode()
   timeout_ = declare_parameter<double>("timeout", 0.5);
   slave_address_ = declare_parameter<int>("slave_address", 9);
   update_rate_ = declare_parameter<double>("update_rate", 50.0);
-  max_joint_position_ = declare_parameter<double>("max_joint_position", 0.8);
+  max_joint_position_ = declare_parameter<double>("max_joint_position", 0.085);
 
   if (update_rate_ <= 0.0) {
     RCLCPP_WARN(
@@ -40,6 +40,11 @@ RobotiqControllerNode::RobotiqControllerNode()
     RCLCPP_ERROR(this->get_logger(), "Failed to connect to the gripper on port %s with baudrate %d", port_.c_str(), baudrate_);
     throw std::runtime_error("Failed to connect to the gripper");
   }
+
+  {
+    std::lock_guard<std::mutex> lock(driver_mutex_);
+    driver_->activate();
+  }
 #endif
 
   joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
@@ -58,7 +63,10 @@ RobotiqControllerNode::RobotiqControllerNode()
       }
 
       const auto force = request->force;
-      driver_->set_force(force);
+      {
+        std::lock_guard<std::mutex> lock(driver_mutex_);
+        driver_->set_force(force);
+      }
       response->success = true;
       response->message = "Gripper force updated";
       RCLCPP_INFO(this->get_logger(), "Gripper force set to %u", static_cast<unsigned>(force));
@@ -78,7 +86,10 @@ RobotiqControllerNode::RobotiqControllerNode()
       }
 
       const auto speed = request->speed;
-      driver_->set_speed(speed);
+      {
+        std::lock_guard<std::mutex> lock(driver_mutex_);
+        driver_->set_speed(speed);
+      }
       response->success = true;
       response->message = "Gripper speed updated";
       RCLCPP_INFO(this->get_logger(), "Gripper speed set to %u", static_cast<unsigned>(speed));
@@ -118,17 +129,34 @@ RobotiqControllerNode::RobotiqControllerNode()
   RCLCPP_INFO(this->get_logger(), "RobotiqControllerNode initialized");
 }
 
+RobotiqControllerNode::~RobotiqControllerNode()
+{
+  if (!driver_) {
+    return;
+  }
+
+  try {
+    std::lock_guard<std::mutex> lock(driver_mutex_);
+    driver_->deactivate();
+    driver_->disconnect();
+  } catch (const std::exception & e) {
+    RCLCPP_WARN(this->get_logger(), "Destructor cleanup failed: %s", e.what());
+  }
+}
+
 void RobotiqControllerNode::timer_callback()
 {
   constexpr double kRawPositionMax = 255.0;
 
   double joint_position = commanded_position_;
   if (driver_) {
+    std::lock_guard<std::mutex> lock(driver_mutex_);
     const auto raw_position = static_cast<double>(driver_->get_gripper_position());
-    joint_position = std::clamp((raw_position / kRawPositionMax) * max_joint_position_, 0.0, max_joint_position_);
+    const auto mapped_position = std::clamp((raw_position / kRawPositionMax) * max_joint_position_, 0.0, max_joint_position_);
+    joint_position = max_joint_position_ - mapped_position;
   }
 
-  RCLCPP_INFO(this->get_logger(), "Publishing joint states: position=%.4f effort=%.4f", joint_position, commanded_effort_);
+  //RCLCPP_INFO(this->get_logger(), "Publishing joint states: position=%.4f effort=%.4f", joint_position, commanded_effort_);
   auto joint_state = sensor_msgs::msg::JointState();
   joint_state.header.stamp = this->now();
   joint_state.name = {
@@ -140,12 +168,12 @@ void RobotiqControllerNode::timer_callback()
     "robotiq_85_right_knuckle_joint"
   };
   joint_state.position = {
+    -joint_position,
     joint_position,
     joint_position,
     joint_position,
     -joint_position,
-    -joint_position,
-    joint_position
+    -joint_position
   };
   joint_state.velocity = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   joint_state.effort = {commanded_effort_, commanded_effort_, commanded_effort_, commanded_effort_, commanded_effort_, commanded_effort_};
@@ -182,12 +210,25 @@ void RobotiqControllerNode::execute(
   commanded_effort_ = goal->command.effort[0];
   commanded_position_ = std::clamp(commanded_position_, 0.0, max_joint_position_);
   commanded_effort_ = std::max(0.0, std::min(100.0, commanded_effort_));
-  driver_->set_gripper_position(
-    static_cast<uint8_t>((commanded_position_ / max_joint_position_) * 0xFF));
-  driver_->set_force(static_cast<uint8_t>(commanded_effort_ / 100.0 * 0xFF));
+  {
+    const auto normalized_position = commanded_position_ / max_joint_position_;
+    const auto raw_command = static_cast<uint8_t>((1.0 - normalized_position) * 0xFF);
+    std::lock_guard<std::mutex> lock(driver_mutex_);
+    driver_->set_gripper_position(raw_command);
+    driver_->set_force(static_cast<uint8_t>(commanded_effort_ / 100.0 * 0xFF));
+  }
 
   const auto wait_start = std::chrono::steady_clock::now();
-  while (rclcpp::ok() && driver_->gripper_is_moving()) {
+  while (rclcpp::ok()) {
+    bool gripper_is_moving = false;
+    {
+      std::lock_guard<std::mutex> lock(driver_mutex_);
+      gripper_is_moving = driver_->gripper_is_moving();
+    }
+    if (!gripper_is_moving) {
+      break;
+    }
+
     if (goal_handle->is_canceling()) {
       auto result = std::make_shared<control_msgs::action::ParallelGripperCommand::Result>();
       result->state.header.stamp = this->now();
@@ -211,9 +252,14 @@ void RobotiqControllerNode::execute(
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
   }
 
-  const auto raw_position = static_cast<double>(driver_->get_gripper_position());
-  const auto reached_position = std::clamp(
+  double raw_position = 0.0;
+  {
+    std::lock_guard<std::mutex> lock(driver_mutex_);
+    raw_position = static_cast<double>(driver_->get_gripper_position());
+  }
+  const auto mapped_position = std::clamp(
     (raw_position / kRawPositionMax) * max_joint_position_, 0.0, max_joint_position_);
+  const auto reached_position = max_joint_position_ - mapped_position;
 
 
   auto result = std::make_shared<control_msgs::action::ParallelGripperCommand::Result>();
@@ -227,12 +273,12 @@ void RobotiqControllerNode::execute(
     "robotiq_85_right_knuckle_joint"
   };
   result->state.position = {
+    -reached_position,
     reached_position,
     reached_position,
     reached_position,
     -reached_position,
-    -reached_position,
-    reached_position
+    -reached_position
   };
   result->state.velocity = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   result->state.effort = {commanded_effort_, commanded_effort_, commanded_effort_, commanded_effort_, commanded_effort_, commanded_effort_};

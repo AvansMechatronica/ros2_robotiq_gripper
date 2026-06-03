@@ -143,6 +143,7 @@ class RobotiqGripperController(Node):
         Returns:
             bool: True if successful
         """
+        
         self.get_logger().info('Opening gripper...')
         # For 2F-85: 0.085m, for 2F-140: 0.140m
         # Using 0.085 as default (most common model)

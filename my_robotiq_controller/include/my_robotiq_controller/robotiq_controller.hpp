@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <memory>
+#include <mutex>
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
@@ -19,6 +20,7 @@ class RobotiqControllerNode : public rclcpp::Node
 {
 public:
   RobotiqControllerNode();
+  ~RobotiqControllerNode() override;
 
 private:
   void timer_callback();
@@ -40,4 +42,5 @@ private:
   int slave_address_;
   double commanded_position_;
   double commanded_effort_;
+  std::mutex driver_mutex_;
 };

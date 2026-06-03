@@ -30,9 +30,10 @@ def generate_launch_description():
         default_value="50.0",
         description="Joint state publish/update rate in Hz",
     )
+    # For 2F-85: 0.085m, for 2F-140: 0.140m
     max_joint_position_arg = DeclareLaunchArgument(
         "max_joint_position",
-        default_value="0.8",
+        default_value="0.085",
         description="Maximum joint position mapped from raw gripper feedback",
     )
 

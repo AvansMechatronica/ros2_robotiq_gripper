@@ -12,12 +12,11 @@ A command-line interface for gripper control.
 
 ```bash
 # Make sure the gripper controller is running first
-ros2 launch robotiq_description robotiq_control.launch.py
+ros2 launch my_robotiq_controller robotiq_controller.launch.py r
 
 # In another terminal:
 
-# Activate the gripper
-ros2 run robotiq_app control_gripper --activate
+
 
 # Open the gripper
 ros2 run robotiq_app control_gripper --open
