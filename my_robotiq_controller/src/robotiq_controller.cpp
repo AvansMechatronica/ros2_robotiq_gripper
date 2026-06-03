@@ -7,9 +7,19 @@
 using robotiq_driver::DefaultDriver;
 using robotiq_driver::DefaultSerial;
 
+// This node bridges ROS 2 interfaces (services + action + joint states)
+// with the Robotiq low-level driver:
+// - Parameters configure serial transport and joint-model scaling.
+// - Two services update speed/force setpoints at runtime.
+// - A ParallelGripperCommand action receives open/close goals.
+// - A periodic timer publishes JointState for visualization/controllers.
 RobotiqControllerNode::RobotiqControllerNode()
 : Node("dummy_node")
 {
+  // --- Runtime parameters -------------------------------------------------
+  // `max_joint_position_` is the modeled "fully open" position (meters/radians
+  // depending on URDF joint definition) used to map raw 8-bit hardware values
+  // into ROS joint-space values.
   port_ = declare_parameter<std::string>("port", "/dev/ttyUSB0");
   baudrate_ = declare_parameter<int>("baudrate", 115200);
   timeout_ = declare_parameter<double>("timeout", 0.5);
@@ -25,9 +35,15 @@ RobotiqControllerNode::RobotiqControllerNode()
   }
 
 
+  // Internal command cache. These values are reused by `timer_callback()`
+  // so state output remains coherent even if hardware polling is delayed.
   commanded_position_ = 0.0;
   commanded_effort_ = 0.0;
-#if 1
+
+  // --- Driver bootstrap ---------------------------------------------------
+  // Build serial transport, then construct and connect the Robotiq driver.
+  // Failure to connect is treated as fatal because this node's purpose is
+  // direct hardware control.
   auto serial = std::make_unique<DefaultSerial>();
   serial->set_port(port_);
   serial->set_baudrate(static_cast<uint32_t>(baudrate_));
@@ -45,10 +61,13 @@ RobotiqControllerNode::RobotiqControllerNode()
     std::lock_guard<std::mutex> lock(driver_mutex_);
     driver_->activate();
   }
-#endif
 
+
+  // Publish complete six-joint kinematic state compatible with the Robotiq
+  // URDF chain used by RViz and downstream controllers.
   joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
 
+  // Service endpoint to update force register without issuing a full action goal.
   set_force_service_ = this->create_service<my_robotiq_controller::srv::SetForce>(
     "set_gripper_force",
     [this](
@@ -72,6 +91,7 @@ RobotiqControllerNode::RobotiqControllerNode()
       RCLCPP_INFO(this->get_logger(), "Gripper force set to %u", static_cast<unsigned>(force));
     });
 
+  // Service endpoint to update speed register without issuing a full action goal.
   set_speed_service_ = this->create_service<my_robotiq_controller::srv::SetSpeed>(
     "set_gripper_speed",
     [this](
@@ -95,6 +115,11 @@ RobotiqControllerNode::RobotiqControllerNode()
       RCLCPP_INFO(this->get_logger(), "Gripper speed set to %u", static_cast<unsigned>(speed));
     });
 
+  // Action server behavior:
+  // - Goal callback validates payload shape and accepts executable goals.
+  // - Cancel callback always accepts cancellation requests.
+  // - Accepted callback executes goal asynchronously in a detached thread so
+  //   the action server callback path remains non-blocking.
   action_server_ = rclcpp_action::create_server<control_msgs::action::ParallelGripperCommand>(
     this,
     "/robotiq_gripper_controller/gripper_cmd",
@@ -122,6 +147,7 @@ RobotiqControllerNode::RobotiqControllerNode()
       std::thread{std::bind(&RobotiqControllerNode::execute, this, goal_handle)}.detach();
     });
 
+  // Periodic publisher loop for joint state feedback.
   timer_ = this->create_wall_timer(
     std::chrono::duration<double>(1.0 / update_rate_),
     std::bind(&RobotiqControllerNode::timer_callback, this));
@@ -131,6 +157,9 @@ RobotiqControllerNode::RobotiqControllerNode()
 
 RobotiqControllerNode::~RobotiqControllerNode()
 {
+  // Best-effort shutdown sequence: if a driver exists, deactivate then
+  // disconnect while holding the same mutex used during runtime I/O.
+  // Exceptions are swallowed to avoid throwing from destructor context.
   if (!driver_) {
     return;
   }
@@ -148,15 +177,31 @@ void RobotiqControllerNode::timer_callback()
 {
   constexpr double kRawPositionMax = 255.0;
 
+  // Default to the last commanded value; overwrite with hardware feedback when
+  // available. This gives stable output during startup/transient failures.
   double joint_position = commanded_position_;
   if (driver_) {
     std::lock_guard<std::mutex> lock(driver_mutex_);
+    // Robotiq register semantics vs. ROS joint semantics:
+    // - The hardware reports a raw position in [0, 255].
+    // - On this gripper, larger raw values correspond to a more CLOSED gripper.
+    // - Our exported ROS joint position is modeled as opening width in meters,
+    //   where 0.0 means fully closed and `max_joint_position_` means fully open.
+    // Therefore we:
+    //   1) Scale raw [0, 255] -> [0, max_joint_position_] (`mapped_position`),
+    //   2) Invert with `max_joint_position_ - mapped_position` so the published
+    //      joint value matches the URDF/controller convention (open increases).
+    // This same conversion/inversion is intentionally mirrored in `execute()`
+    // when building the action result so command, feedback and state remain
+    // consistent.
     const auto raw_position = static_cast<double>(driver_->get_gripper_position());
     const auto mapped_position = std::clamp((raw_position / kRawPositionMax) * max_joint_position_, 0.0, max_joint_position_);
     joint_position = max_joint_position_ - mapped_position;
   }
 
   //RCLCPP_INFO(this->get_logger(), "Publishing joint states: position=%.4f effort=%.4f", joint_position, commanded_effort_);
+  // Build the coupled six-joint representation used by the Robotiq 2F model.
+  // Sign conventions are URDF-dependent; paired joints move symmetrically.
   auto joint_state = sensor_msgs::msg::JointState();
   joint_state.header.stamp = this->now();
   joint_state.name = {
@@ -185,6 +230,7 @@ void RobotiqControllerNode::execute(
 {
   constexpr double kRawPositionMax = 255.0;
 
+  // 1) Validate incoming action goal payload.
   const auto goal = goal_handle->get_goal();
   if (goal->command.position.empty() || goal->command.effort.empty()) {
     auto result = std::make_shared<control_msgs::action::ParallelGripperCommand::Result>();
@@ -196,6 +242,7 @@ void RobotiqControllerNode::execute(
     return;
   }
 
+  // 2) Validate runtime dependencies.
   if (!driver_) {
     auto result = std::make_shared<control_msgs::action::ParallelGripperCommand::Result>();
     result->stalled = true;
@@ -206,11 +253,17 @@ void RobotiqControllerNode::execute(
     return;
   }
 
+  // 3) Sanitize and cache command.
+  // `position` is clamped to modeled gripper range.
+  // `effort` is interpreted as percentage [0, 100].
   commanded_position_ = goal->command.position[0];
   commanded_effort_ = goal->command.effort[0];
   commanded_position_ = std::clamp(commanded_position_, 0.0, max_joint_position_);
   commanded_effort_ = std::max(0.0, std::min(100.0, commanded_effort_));
   {
+    // 4) Convert ROS position/effort into hardware register commands.
+    // Position conversion is inverted because raw register values increase
+    // toward "closed" while ROS opening position increases toward "open".
     const auto normalized_position = commanded_position_ / max_joint_position_;
     const auto raw_command = static_cast<uint8_t>((1.0 - normalized_position) * 0xFF);
     std::lock_guard<std::mutex> lock(driver_mutex_);
@@ -218,6 +271,8 @@ void RobotiqControllerNode::execute(
     driver_->set_force(static_cast<uint8_t>(commanded_effort_ / 100.0 * 0xFF));
   }
 
+  // 5) Wait until movement ends, cancellation arrives, or timeout is reached.
+  // Polling interval keeps latency low without busy-waiting.
   const auto wait_start = std::chrono::steady_clock::now();
   while (rclcpp::ok()) {
     bool gripper_is_moving = false;
@@ -252,6 +307,7 @@ void RobotiqControllerNode::execute(
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
   }
 
+  // 6) Read final hardware position and remap to ROS model space.
   double raw_position = 0.0;
   {
     std::lock_guard<std::mutex> lock(driver_mutex_);
@@ -262,6 +318,8 @@ void RobotiqControllerNode::execute(
   const auto reached_position = max_joint_position_ - mapped_position;
 
 
+  // 7) Populate action result using the same six-joint convention as the
+  // periodic JointState publisher.
   auto result = std::make_shared<control_msgs::action::ParallelGripperCommand::Result>();
   result->state.header.stamp = this->now();
   result->state.name = {
@@ -285,6 +343,7 @@ void RobotiqControllerNode::execute(
   result->stalled = false;
   result->reached_goal = true;
 
+  // 8) Finalize as canceled or succeeded depending on late cancellation state.
   if (goal_handle->is_canceling()) {
     goal_handle->canceled(result);
     RCLCPP_INFO(this->get_logger(), "Gripper goal canceled");
@@ -301,6 +360,7 @@ void RobotiqControllerNode::execute(
 
 int main(int argc, char * argv[])
 {
+  // Standard ROS 2 node lifecycle.
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<RobotiqControllerNode>());
   rclcpp::shutdown();

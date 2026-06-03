@@ -47,7 +47,7 @@ Voeg een virtuele gripper toe aan je URDF bestand van je project:
 De grippercontroller kan als volgt gestart worden:
 
 ```bash
-ros2 launch robotiq_description robotiq_control.launch.py
+ros2 launch my_robotiq_controller robotiq_controller.launch.py
 ```
 
 
