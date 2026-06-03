@@ -41,15 +41,7 @@ Voeg een virtuele gripper toe aan je URDF bestand van je project:
 </robot>
 ```
 
-# Starten Controller
-
-
-De grippercontroller kan als volgt gestart worden:
-
-```bash
-ros2 launch my_robotiq_controller robotiq_controller.launch.py
-```
-
-
-
-
+:::{note}
+Als je de gripper aan de robot hebt toegevoegd en je maak gebruik van de `Movegroup` interface, zorg er dan voor de je een dummy  `Planning Group` toevoegt aan je `moveit_config` package. Deze groep heeft alle joints van de gripper nodig. Hierdoor blijft de `Movegroup` interface werken.
+Je kunt in geen geval de gripper vanuit de `Movegroup` interface aansturen, maar zonder deze dummy groep werkt de `Movegroup` interface helemaal niet meer.
+:::
