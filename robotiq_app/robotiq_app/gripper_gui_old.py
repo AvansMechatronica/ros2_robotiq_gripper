@@ -4,6 +4,7 @@ GUI application to control and monitor the Robotiq gripper.
 
 This application provides:
 - Real-time gripper status display
+- Activation control
 - Position control with slider
 - Effort (force) control
 - Quick action buttons (open, close, half)
@@ -14,6 +15,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from control_msgs.action import ParallelGripperCommand
 from sensor_msgs.msg import JointState
+from std_srvs.srv import Trigger
 import tkinter as tk
 from tkinter import ttk, messagebox
 import threading
@@ -32,6 +34,7 @@ class RobotiqGripperGUI:
         # ROS2 node and clients (initialized later in separate thread)
         self.node = None
         self.action_client = None
+        self.activation_client = None
         self.joint_state_sub = None
         
         # State variables
@@ -39,6 +42,7 @@ class RobotiqGripperGUI:
         self.current_velocity = 0.0
         self.target_position = tk.DoubleVar(value=0.0)
         self.target_effort = tk.DoubleVar(value=50.0)
+        self.is_activated = tk.BooleanVar(value=False)
         self.is_moving = tk.BooleanVar(value=False)
         self.last_command_success = tk.StringVar(value="N/A")
         
@@ -63,6 +67,12 @@ class RobotiqGripperGUI:
                 self.node,
                 ParallelGripperCommand,
                 '/robotiq_gripper_controller/gripper_cmd'
+            )
+            
+            # Service client for activation
+            self.activation_client = self.node.create_client(
+                Trigger,
+                '/robotiq_activation_controller/reactivate_gripper'
             )
             
             # Subscriber for joint states
@@ -163,6 +173,25 @@ class RobotiqGripperGUI:
             font=("Helvetica", 10)
         )
         self.command_result_label.grid(row=3, column=1, columnspan=2, sticky=tk.W, pady=5, padx=10)
+        
+        # Activation Frame
+        activation_frame = ttk.LabelFrame(self.root, text="Activation", padding=10)
+        activation_frame.pack(pady=10, padx=20, fill=tk.X)
+        
+        self.activate_btn = ttk.Button(
+            activation_frame,
+            text="Activate Gripper",
+            command=self.activate_gripper,
+            style="Accent.TButton"
+        )
+        self.activate_btn.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(
+            activation_frame,
+            text="Note: Gripper must be activated before use",
+            font=("Helvetica", 9, "italic"),
+            foreground="gray"
+        ).pack()
         
         # Control Frame
         control_frame = ttk.LabelFrame(self.root, text="Position Control", padding=10)
@@ -309,6 +338,57 @@ class RobotiqGripperGUI:
         
         # Schedule next update
         self.root.after(100, self.update_gui)
+
+    def activate_gripper(self):
+        """Activate the gripper."""
+        if self.activation_client is None:
+            messagebox.showerror("Error", "ROS2 not initialized yet. Please wait.")
+            return
+        
+        self.activate_btn.config(state=tk.DISABLED, text="Activating...")
+        self.last_command_success.set("Activating...")
+        
+        def activate_thread():
+            try:
+                if not self.activation_client.wait_for_service(timeout_sec=5.0):
+                    self.root.after(0, lambda: messagebox.showwarning(
+                        "Service Unavailable", 
+                        "Activation service not available.\n\n"
+                        "This is normal when using fake/simulated hardware.\n"
+                        "You can use the gripper controls without activation."
+                    ))
+                    self.root.after(0, lambda: self.last_command_success.set("N/A (Fake hardware)"))
+                    self.is_activated.set(True)  # Allow usage anyway
+                    return
+                
+                request = Trigger.Request()
+                future = self.activation_client.call_async(request)
+                rclpy.spin_until_future_complete(self.node, future, timeout_sec=10.0)
+                
+                if future.result() and future.result().success:
+                    self.is_activated.set(True)
+                    self.root.after(0, lambda: messagebox.showinfo(
+                        "Success", "Gripper activated successfully!"
+                    ))
+                    self.root.after(0, lambda: self.last_command_success.set("✓ Activated"))
+                else:
+                    msg = future.result().message if future.result() else "Unknown error"
+                    self.root.after(0, lambda: messagebox.showerror(
+                        "Error", f"Activation failed: {msg}"
+                    ))
+                    self.root.after(0, lambda: self.last_command_success.set(f"✗ Failed: {msg}"))
+                    
+            except Exception as e:
+                self.root.after(0, lambda: messagebox.showerror(
+                    "Error", f"Error during activation: {e}"
+                ))
+                self.root.after(0, lambda: self.last_command_success.set(f"✗ Error: {e}"))
+            finally:
+                self.root.after(0, lambda: self.activate_btn.config(
+                    state=tk.NORMAL, text="Activate Gripper"
+                ))
+        
+        threading.Thread(target=activate_thread, daemon=True).start()
 
     def send_command(self):
         """Send gripper command with current slider values."""

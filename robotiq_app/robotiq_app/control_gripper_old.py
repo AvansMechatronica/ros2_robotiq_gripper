@@ -3,6 +3,7 @@
 Python script to control the Robotiq gripper using ROS2 action interface.
 
 This script provides a simple interface to:
+- Activate the gripper
 - Open/close the gripper to specific positions
 - Control speed and effort (force)
 """
@@ -29,10 +30,46 @@ class RobotiqGripperController(Node):
             '/robotiq_gripper_controller/gripper_cmd'
         )
         
+        # Service client for gripper activation
+        self._activation_client = self.create_client(
+            Trigger,
+            '/robotiq_activation_controller/reactivate_gripper'
+        )
         
         self.get_logger().info('Robotiq Gripper Controller initialized')
 
-
+    def activate_gripper(self, timeout_sec=10.0):
+        """
+        Activate (or reactivate) the gripper.
+        
+        Args:
+            timeout_sec: Timeout for service call
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        self.get_logger().info('Waiting for activation service...')
+        
+        if not self._activation_client.wait_for_service(timeout_sec=timeout_sec):
+            self.get_logger().error('Activation service not available')
+            return False
+        
+        request = Trigger.Request()
+        future = self._activation_client.call_async(request)
+        
+        rclpy.spin_until_future_complete(self, future, timeout_sec=timeout_sec)
+        
+        if future.result() is not None:
+            response = future.result()
+            if response.success:
+                self.get_logger().info(f'Gripper activated: {response.message}')
+                return True
+            else:
+                self.get_logger().error(f'Activation failed: {response.message}')
+                return False
+        else:
+            self.get_logger().error('Service call failed')
+            return False
 
     def send_gripper_command(self, position, max_effort=50.0, timeout_sec=10.0):
         """
@@ -147,7 +184,8 @@ def main(args=None):
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-
+  # Activate the gripper
+  python3 control_gripper.py --activate
   
   # Open the gripper
   python3 control_gripper.py --open
@@ -160,10 +198,14 @@ Examples:
   
   # Set position with custom effort
   python3 control_gripper.py --position 0.02 --effort 100.0
+  
+  # Activate and then open
+  python3 control_gripper.py --activate --open
         """
     )
     
-
+    parser.add_argument('--activate', action='store_true',
+                       help='Activate (or reactivate) the gripper')
     parser.add_argument('--open', action='store_true',
                        help='Open the gripper')
     parser.add_argument('--close', action='store_true',
@@ -182,18 +224,27 @@ Examples:
     controller = RobotiqGripperController()
     
     try:
-        if parsed_args.open:
-            success = controller.open_gripper(max_effort=parsed_args.effort)
-        elif parsed_args.close:
-            success = controller.close_gripper(max_effort=parsed_args.effort)
-        elif parsed_args.position is not None:
-            success = controller.set_gripper_position(
-                position=parsed_args.position,
-                max_effort=parsed_args.effort
-            )
+        success = True
+        
+        # Activate if requested
+        if parsed_args.activate:
+            if not controller.activate_gripper():
+                success = False
+        
+        # Execute position commands
+        if success:
+            if parsed_args.open:
+                success = controller.open_gripper(max_effort=parsed_args.effort)
+            elif parsed_args.close:
+                success = controller.close_gripper(max_effort=parsed_args.effort)
+            elif parsed_args.position is not None:
+                success = controller.set_gripper_position(
+                    position=parsed_args.position,
+                    max_effort=parsed_args.effort
+                )
         
         # If no command specified, show help
-        if not (parsed_args.open or 
+        if not (parsed_args.activate or parsed_args.open or 
                 parsed_args.close or parsed_args.position is not None):
             parser.print_help()
             controller.get_logger().info(

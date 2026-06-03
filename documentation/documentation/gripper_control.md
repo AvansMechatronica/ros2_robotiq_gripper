@@ -4,7 +4,22 @@ This directory contains Python scripts for controlling the Robotiq gripper in RO
 
 ## Available Scripts
 
-### 1. Command-Line Control (`control_gripper`)
+### 1. GUI Control (`gripper_gui.py`)
+
+A graphical user interface for gripper control and monitoring.
+
+#### Usage
+
+```bash
+# Make sure the gripper controller is running
+ros2 launch robotiq_description robotiq_control.launch.py
+
+# In another terminal, launch the GUI
+ros2 run robotiq_app gripper_gui.py
+```
+
+
+### 2. Command-Line Control (`control_gripper`)
 
 A command-line interface for gripper control.
 
@@ -42,19 +57,6 @@ ros2 run robotiq_app control_gripper --activate --open
 - `--position METERS`: Move to specific position (0.0 to 0.085 for 2F-85, 0.0 to 0.140 for 2F-140)
 - `--effort NEWTONS`: Set maximum effort/force (default: 50.0, max: 235.0)
 
-### 2. GUI Control (`gripper_gui.py`)
-
-A graphical user interface for gripper control and monitoring.
-
-#### Usage
-
-```bash
-# Make sure the gripper controller is running
-ros2 launch robotiq_description robotiq_control.launch.py
-
-# In another terminal, launch the GUI
-ros2 run robotiq_app gripper_gui.py
-```
 
 #### GUI Features
 
