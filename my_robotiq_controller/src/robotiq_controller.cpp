@@ -65,7 +65,7 @@ RobotiqControllerNode::RobotiqControllerNode()
 
   // Publish complete six-joint kinematic state compatible with the Robotiq
   // URDF chain used by RViz and downstream controllers.
-  joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
+  joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/robotiq_gripper_controller/joint_states", 10);
 
   // Service endpoint to update force register without issuing a full action goal.
   set_force_service_ = this->create_service<my_robotiq_controller::srv::SetForce>(
@@ -114,6 +114,11 @@ RobotiqControllerNode::RobotiqControllerNode()
       response->message = "Gripper speed updated";
       RCLCPP_INFO(this->get_logger(), "Gripper speed set to %u", static_cast<unsigned>(speed));
     });
+
+  set_joint_state_subscriber_ = this->create_subscription<std_msgs::msg::Float64>(
+    "/robotiq_gripper_controller/set_joint_state",
+    10,
+    std::bind(&RobotiqControllerNode::handle_set_joint_state, this, std::placeholders::_1));
 
   // Action server behavior:
   // - Goal callback validates payload shape and accepts executable goals.
@@ -223,6 +228,26 @@ void RobotiqControllerNode::timer_callback()
   joint_state.velocity = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   joint_state.effort = {commanded_effort_, commanded_effort_, commanded_effort_, commanded_effort_, commanded_effort_, commanded_effort_};
   joint_state_publisher_->publish(joint_state);
+}
+
+void RobotiqControllerNode::handle_set_joint_state(const std_msgs::msg::Float64::SharedPtr msg)
+{
+  if (!driver_) {
+    RCLCPP_ERROR(this->get_logger(), "set_joint_state ignored: driver is not initialized");
+    return;
+  }
+
+  constexpr double kRawPositionMax = 255.0;
+  const auto requested_position = std::clamp(msg->data, 0.0, max_joint_position_);
+  commanded_position_ = requested_position;
+
+  const auto normalized_position = requested_position / max_joint_position_;
+  const auto raw_command = static_cast<uint8_t>((1.0 - normalized_position) * kRawPositionMax);
+
+  {
+    std::lock_guard<std::mutex> lock(driver_mutex_);
+    driver_->set_gripper_position(raw_command);
+  }
 }
 
 void RobotiqControllerNode::execute(

@@ -67,3 +67,45 @@ ros2 run robotiq_app control_gripper --position 0.02 --effort 100.0
 ros2 run robotiq_app control_gripper --activate --open
 ```
 
+## 3. Directe gripper besturing via ROS2-topics
+Je kunt ook direct berichten publiceren op de ROS2-topics om de gripper te besturen:
+
+### Nieuw topic voor directe positie-aansturing
+De controller subscribe nu op:
+
+- Topic: `/robotiq_gripper_controller/set_joint_state`
+- Type: `std_msgs/msg/Float64`
+
+De waarde in `data` is de gewenste gripperpositie in meter (voor 2F-85):
+
+- `0.0` = volledig gesloten
+- `0.085` = volledig open
+
+Waarden buiten dit bereik worden in de node automatisch begrensd.
+
+### Voorbeelden publiceren
+
+Volledig openen:
+
+```bash
+ros2 topic pub --once /robotiq_gripper_controller/set_joint_state std_msgs/msg/Float64 "{data: 0.085}"
+```
+
+Volledig sluiten:
+
+```bash
+ros2 topic pub --once /robotiq_gripper_controller/set_joint_state std_msgs/msg/Float64 "{data: 0.0}"
+```
+
+Halverwege openen:
+
+```bash
+ros2 topic pub --once /robotiq_gripper_controller/set_joint_state std_msgs/msg/Float64 "{data: 0.04}"
+```
+
+Controleer eventueel eerst of de subscriber actief is:
+
+```bash
+ros2 topic info /robotiq_gripper_controller/set_joint_state
+```
+
