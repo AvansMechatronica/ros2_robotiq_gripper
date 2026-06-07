@@ -20,6 +20,7 @@ Welkom de Robotiq Finger-Gripper Repository
    documentation/install.md
    documentation/gripper.md
    documentation/gripper_control.md
+   documentation/gripper_control_old.md
    documentation/controller.md
    documentation/faq.md
 
