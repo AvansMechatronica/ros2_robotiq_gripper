@@ -34,6 +34,16 @@ RobotiqControllerNode::RobotiqControllerNode()
     update_rate_ = 1.0;
   }
 
+  RCLCPP_DEBUG(
+    this->get_logger(),
+    "Parameters loaded: port=%s baudrate=%d timeout=%.3f slave_address=%d update_rate=%.3f max_joint_position=%.4f",
+    port_.c_str(),
+    baudrate_,
+    timeout_,
+    slave_address_,
+    update_rate_,
+    max_joint_position_);
+
 
   // Internal command cache. These values are reused by `timer_callback()`
   // so state output remains coherent even if hardware polling is delayed.
@@ -82,6 +92,7 @@ RobotiqControllerNode::RobotiqControllerNode()
       }
 
       const auto force = request->force;
+      RCLCPP_DEBUG(this->get_logger(), "set_gripper_force request received: force=%u", static_cast<unsigned>(force));
       {
         std::lock_guard<std::mutex> lock(driver_mutex_);
         driver_->set_force(force);
@@ -106,6 +117,7 @@ RobotiqControllerNode::RobotiqControllerNode()
       }
 
       const auto speed = request->speed;
+      RCLCPP_DEBUG(this->get_logger(), "set_gripper_speed request received: speed=%u", static_cast<unsigned>(speed));
       {
         std::lock_guard<std::mutex> lock(driver_mutex_);
         driver_->set_speed(speed);
@@ -135,6 +147,11 @@ RobotiqControllerNode::RobotiqControllerNode()
         RCLCPP_WARN(this->get_logger(), "Received malformed gripper goal");
         return rclcpp_action::GoalResponse::REJECT;
       }
+      RCLCPP_DEBUG(
+        this->get_logger(),
+        "Goal request: position=%.4f effort=%.4f",
+        goal->command.position[0],
+        goal->command.effort[0]);
       RCLCPP_INFO(
         this->get_logger(),
         "Received gripper goal: position=%.4f effort=%.4f",
@@ -202,9 +219,19 @@ void RobotiqControllerNode::timer_callback()
     const auto raw_position = static_cast<double>(driver_->get_gripper_position());
     const auto mapped_position = std::clamp((raw_position / kRawPositionMax) * max_joint_position_, 0.0, max_joint_position_);
     joint_position = max_joint_position_ - mapped_position;
+    RCLCPP_DEBUG(
+      this->get_logger(),
+      "Timer feedback: raw_position=%.2f mapped_position=%.4f published_position=%.4f",
+      raw_position,
+      mapped_position,
+      joint_position);
   }
 
-  //RCLCPP_INFO(this->get_logger(), "Publishing joint states: position=%.4f effort=%.4f", joint_position, commanded_effort_);
+  RCLCPP_DEBUG(
+    this->get_logger(),
+    "Publishing joint states: position=%.4f effort=%.4f",
+    joint_position,
+    commanded_effort_);
   // Build the coupled six-joint representation used by the Robotiq 2F model.
   // Sign conventions are URDF-dependent; paired joints move symmetrically.
   auto joint_state = sensor_msgs::msg::JointState();
@@ -243,6 +270,12 @@ void RobotiqControllerNode::handle_set_joint_state(const std_msgs::msg::Float64:
 
   const auto normalized_position = requested_position / max_joint_position_;
   const auto raw_command = static_cast<uint8_t>((1.0 - normalized_position) * kRawPositionMax);
+  RCLCPP_DEBUG(
+    this->get_logger(),
+    "set_joint_state request: requested_position=%.4f normalized_position=%.4f raw_command=%u",
+    requested_position,
+    normalized_position,
+    static_cast<unsigned>(raw_command));
 
   {
     std::lock_guard<std::mutex> lock(driver_mutex_);
@@ -285,15 +318,28 @@ void RobotiqControllerNode::execute(
   commanded_effort_ = goal->command.effort[0];
   commanded_position_ = std::clamp(commanded_position_, 0.0, max_joint_position_);
   commanded_effort_ = std::max(0.0, std::min(100.0, commanded_effort_));
+  RCLCPP_DEBUG(
+    this->get_logger(),
+    "Sanitized goal: commanded_position=%.4f commanded_effort=%.4f max_joint_position=%.4f",
+    commanded_position_,
+    commanded_effort_,
+    max_joint_position_);
   {
     // 4) Convert ROS position/effort into hardware register commands.
     // Position conversion is inverted because raw register values increase
     // toward "closed" while ROS opening position increases toward "open".
     const auto normalized_position = commanded_position_ / max_joint_position_;
     const auto raw_command = static_cast<uint8_t>((1.0 - normalized_position) * 0xFF);
+    const auto force_command = static_cast<uint8_t>(commanded_effort_ / 100.0 * 0xFF);
+    RCLCPP_DEBUG(
+      this->get_logger(),
+      "Hardware command: normalized_position=%.4f raw_position=%u force=%u",
+      normalized_position,
+      static_cast<unsigned>(raw_command),
+      static_cast<unsigned>(force_command));
     std::lock_guard<std::mutex> lock(driver_mutex_);
     driver_->set_gripper_position(raw_command);
-    driver_->set_force(static_cast<uint8_t>(commanded_effort_ / 100.0 * 0xFF));
+    driver_->set_force(force_command);
   }
 
   // 5) Wait until movement ends, cancellation arrives, or timeout is reached.
@@ -305,6 +351,7 @@ void RobotiqControllerNode::execute(
       std::lock_guard<std::mutex> lock(driver_mutex_);
       gripper_is_moving = driver_->gripper_is_moving();
     }
+    RCLCPP_DEBUG(this->get_logger(), "Movement poll: gripper_is_moving=%s", gripper_is_moving ? "true" : "false");
     if (!gripper_is_moving) {
       break;
     }
@@ -341,6 +388,12 @@ void RobotiqControllerNode::execute(
   const auto mapped_position = std::clamp(
     (raw_position / kRawPositionMax) * max_joint_position_, 0.0, max_joint_position_);
   const auto reached_position = max_joint_position_ - mapped_position;
+  RCLCPP_DEBUG(
+    this->get_logger(),
+    "Final hardware state: raw_position=%.2f mapped_position=%.4f reached_position=%.4f",
+    raw_position,
+    mapped_position,
+    reached_position);
 
 
   // 7) Populate action result using the same six-joint convention as the

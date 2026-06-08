@@ -66,7 +66,7 @@ def generate_launch_description():
     )
     args.append(
         launch.actions.DeclareLaunchArgument(
-            name="launch_rviz", default_value="false", description="Launch RViz?"
+            name="launch_rviz", default_value="true", description="Launch RViz?"
         )
     )
     args.append(
