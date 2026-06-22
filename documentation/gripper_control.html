@@ -1,0 +1,242 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="nl" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robotiq Gripper Besturingscripts &mdash; Robotiq Gripper 0.1 documentatie</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a57088fb"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script src="../_static/translations.js?v=e4d38c6a"></script>
+      <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Zoeken" href="../search.html" />
+    <link rel="next" title="Old Robotiq Gripper Control Scripts" href="gripper_control_old.html" />
+    <link rel="prev" title="Aansluiten gripper op development computer" href="gripper.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Robotiq Gripper
+              <img src="../_static/avans-hogeschool.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Zoek in documentatie" aria-label="Zoek in documentatie" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigatiemenu">
+              <p class="caption" role="heading"><span class="caption-text">Inhoudsopgave:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Inleiding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installatie van de Robotiq package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html#urdf-virtuele-gripper">URDF(virtuele gripper)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gripper.html">Aansluiten gripper op development computer</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Robotiq Gripper Besturingscripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#starten-van-de-controller">Starten van de controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gui-besturing-gripper-gui-py">1. GUI-besturing (<code class="docutils literal notranslate"><span class="pre">gripper_gui.py</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#commandoregel-besturing-control-gripper">2. Commandoregel-besturing (<code class="docutils literal notranslate"><span class="pre">control_gripper</span></code>)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#gripper-openen">Gripper openen</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gripper-sluiten">Gripper sluiten</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#naar-specifieke-positie-verplaatsen-0-0-gesloten-0-085-open-voor-2f-85">Naar specifieke positie verplaatsen (0.0 = gesloten, 0.085 = open voor 2F-85)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#positie-instellen-met-aangepaste-kracht-in-newton">Positie instellen met aangepaste kracht (in Newton)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#activeren-en-vervolgens-openen-meerdere-commando-s">Activeren en vervolgens openen (meerdere commando’s)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#directe-gripper-besturing-via-ros2-topics">3. Directe gripper besturing via ROS2-topics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#nieuw-topic-voor-directe-positie-aansturing">Nieuw topic voor directe positie-aansturing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#voorbeelden-publiceren">Voorbeelden publiceren</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gripper_control_old.html">Old Robotiq Gripper Control Scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="controller.html">ROS2 Grippercontroller</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Veelgestelde vragen (FAQ)</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Navigatiemenu voor mobiel" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Robotiq Gripper</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Paginanavigatie">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Robotiq Gripper Besturingscripts</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/documentation/gripper_control.md.txt" rel="nofollow"> Bekijk paginabron</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="robotiq-gripper-besturingscripts">
+<h1>Robotiq Gripper Besturingscripts<a class="headerlink" href="#robotiq-gripper-besturingscripts" title="Link to this heading"></a></h1>
+<p>Deze map bevat Python-scripts voor het besturen van de Robotiq gripper in ROS2.</p>
+<section id="starten-van-de-controller">
+<h2>Starten van de controller<a class="headerlink" href="#starten-van-de-controller" title="Link to this heading"></a></h2>
+<p>Alvorens de gripper is te bedienen dient de controller te zijn gestart. Dit kan als volgt:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>my_robotiq_controller<span class="w"> </span>robotiq_controller.launch.py<span class="w"> </span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Notitie</p>
+<p>Op Ubuntu wordt de groep dialout gebruikt om toegang te geven tot seriële apparaten zoals /dev/ttyUSB0, /dev/ttyACM0 en vergelijkbare USB-seriële adapters.</p>
+<p>Controleer of je gebruiker al in de groep zit</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>groups
+</pre></div>
+</div>
+<p>Of specifiek:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>id<span class="w"> </span>-nG<span class="w"> </span><span class="nv">$USER</span>
+</pre></div>
+</div>
+<p>Als dialout niet in de lijst staat, voeg jezelf toe:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>usermod<span class="w"> </span>-aG<span class="w"> </span>dialout<span class="w"> </span><span class="nv">$USER</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="gui-besturing-gripper-gui-py">
+<h2>1. GUI-besturing (<code class="docutils literal notranslate"><span class="pre">gripper_gui.py</span></code>)<a class="headerlink" href="#gui-besturing-gripper-gui-py" title="Link to this heading"></a></h2>
+<p>Een grafische gebruikersinterface voor gripper-besturing en monitoring.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>gripper_gui.py
+</pre></div>
+</div>
+</section>
+<section id="commandoregel-besturing-control-gripper">
+<h2>2. Commandoregel-besturing (<code class="docutils literal notranslate"><span class="pre">control_gripper</span></code>)<a class="headerlink" href="#commandoregel-besturing-control-gripper" title="Link to this heading"></a></h2>
+<p>Gebruik de volgende commando’s om de gripper te bedienen:</p>
+<section id="gripper-openen">
+<h3>Gripper openen<a class="headerlink" href="#gripper-openen" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--open
+</pre></div>
+</div>
+</section>
+<section id="gripper-sluiten">
+<h3>Gripper sluiten<a class="headerlink" href="#gripper-sluiten" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--close
+</pre></div>
+</div>
+</section>
+<section id="naar-specifieke-positie-verplaatsen-0-0-gesloten-0-085-open-voor-2f-85">
+<h3>Naar specifieke positie verplaatsen (0.0 = gesloten, 0.085 = open voor 2F-85)<a class="headerlink" href="#naar-specifieke-positie-verplaatsen-0-0-gesloten-0-085-open-voor-2f-85" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--position<span class="w"> </span><span class="m">0</span>.04
+</pre></div>
+</div>
+</section>
+<section id="positie-instellen-met-aangepaste-kracht-in-newton">
+<h3>Positie instellen met aangepaste kracht (in Newton)<a class="headerlink" href="#positie-instellen-met-aangepaste-kracht-in-newton" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--position<span class="w"> </span><span class="m">0</span>.02<span class="w"> </span>--effort<span class="w"> </span><span class="m">100</span>.0
+</pre></div>
+</div>
+</section>
+<section id="activeren-en-vervolgens-openen-meerdere-commando-s">
+<h3>Activeren en vervolgens openen (meerdere commando’s)<a class="headerlink" href="#activeren-en-vervolgens-openen-meerdere-commando-s" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--activate<span class="w"> </span>--open
+</pre></div>
+</div>
+</section>
+</section>
+<section id="directe-gripper-besturing-via-ros2-topics">
+<h2>3. Directe gripper besturing via ROS2-topics<a class="headerlink" href="#directe-gripper-besturing-via-ros2-topics" title="Link to this heading"></a></h2>
+<p>Je kunt ook direct berichten publiceren op de ROS2-topics om de gripper te besturen:</p>
+<section id="nieuw-topic-voor-directe-positie-aansturing">
+<h3>Nieuw topic voor directe positie-aansturing<a class="headerlink" href="#nieuw-topic-voor-directe-positie-aansturing" title="Link to this heading"></a></h3>
+<p>De controller subscribe nu op:</p>
+<ul class="simple">
+<li><p>Topic: <code class="docutils literal notranslate"><span class="pre">/robotiq_gripper_controller/set_joint_state</span></code></p></li>
+<li><p>Type: <code class="docutils literal notranslate"><span class="pre">std_msgs/msg/Float64</span></code></p></li>
+</ul>
+<p>De waarde in <code class="docutils literal notranslate"><span class="pre">data</span></code> is de gewenste gripperpositie in meter (voor 2F-85):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">0.0</span></code> = volledig gesloten</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">0.085</span></code> = volledig open</p></li>
+</ul>
+<p>Waarden buiten dit bereik worden in de node automatisch begrensd.</p>
+</section>
+<section id="voorbeelden-publiceren">
+<h3>Voorbeelden publiceren<a class="headerlink" href="#voorbeelden-publiceren" title="Link to this heading"></a></h3>
+<p>Volledig openen:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>topic<span class="w"> </span>pub<span class="w"> </span>--once<span class="w"> </span>/robotiq_gripper_controller/set_joint_state<span class="w"> </span>std_msgs/msg/Float64<span class="w"> </span><span class="s2">&quot;{data: 0.085}&quot;</span>
+</pre></div>
+</div>
+<p>Volledig sluiten:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>topic<span class="w"> </span>pub<span class="w"> </span>--once<span class="w"> </span>/robotiq_gripper_controller/set_joint_state<span class="w"> </span>std_msgs/msg/Float64<span class="w"> </span><span class="s2">&quot;{data: 0.0}&quot;</span>
+</pre></div>
+</div>
+<p>Halverwege openen:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>topic<span class="w"> </span>pub<span class="w"> </span>--once<span class="w"> </span>/robotiq_gripper_controller/set_joint_state<span class="w"> </span>std_msgs/msg/Float64<span class="w"> </span><span class="s2">&quot;{data: 0.04}&quot;</span>
+</pre></div>
+</div>
+<p>Controleer eventueel eerst of de subscriber actief is:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>topic<span class="w"> </span>info<span class="w"> </span>/robotiq_gripper_controller/set_joint_state
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Voettekst">
+        <a href="gripper.html" class="btn btn-neutral float-left" title="Aansluiten gripper op development computer" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Vorige</a>
+        <a href="gripper_control_old.html" class="btn btn-neutral float-right" title="Old Robotiq Gripper Control Scripts" accesskey="n" rel="next">Volgende <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Gerard Harkema.</p>
+  </div>
+
+  Gebouwd met <a href="https://www.sphinx-doc.org/">Sphinx</a> met een
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thema</a>
+    geleverd door <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

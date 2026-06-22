@@ -1,0 +1,444 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="nl" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Old Robotiq Gripper Control Scripts &mdash; Robotiq Gripper 0.1 documentatie</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a57088fb"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script src="../_static/translations.js?v=e4d38c6a"></script>
+      <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Zoeken" href="../search.html" />
+    <link rel="next" title="ROS2 Grippercontroller" href="controller.html" />
+    <link rel="prev" title="Robotiq Gripper Besturingscripts" href="gripper_control.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Robotiq Gripper
+              <img src="../_static/avans-hogeschool.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Zoek in documentatie" aria-label="Zoek in documentatie" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigatiemenu">
+              <p class="caption" role="heading"><span class="caption-text">Inhoudsopgave:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Inleiding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installatie van de Robotiq package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html#urdf-virtuele-gripper">URDF(virtuele gripper)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gripper.html">Aansluiten gripper op development computer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gripper_control.html">Robotiq Gripper Besturingscripts</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Old Robotiq Gripper Control Scripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#starten-controller">Starten Controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#available-scripts">Available Scripts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#command-line-control-control-gripper">1. Command-Line Control (<code class="docutils literal notranslate"><span class="pre">control_gripper</span></code>)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#command-line-options">Command-Line Options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#gui-control-gripper-gui-py">2. GUI Control (<code class="docutils literal notranslate"><span class="pre">gripper_gui.py</span></code>)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Usage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gui-features">GUI Features</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ros2-dependencies">ROS2 Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#python-dependencies">Python Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#starting-the-gripper-system">Starting the Gripper System</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#for-simulation-testing">For Simulation/Testing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#for-real-hardware">For Real Hardware</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#gripper-position-reference">Gripper Position Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#f-85-gripper">2F-85 Gripper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#f-140-gripper">2F-140 Gripper</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#force-effort-guidelines">Force/Effort Guidelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#action-server-not-available">“Action server not available”</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#activation-service-not-available">“Activation service not available”</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gui-not-showing-position-updates">GUI not showing position updates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#permission-denied-when-running-scripts">Permission denied when running scripts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-1-pick-and-place-sequence">Example 1: Pick and Place Sequence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-2-precision-grip">Example 2: Precision Grip</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ros2-topics-and-services">ROS2 Topics and Services</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subscribed-topics">Subscribed Topics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#action-servers">Action Servers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#services">Services</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#additional-information">Additional Information</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="controller.html">ROS2 Grippercontroller</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Veelgestelde vragen (FAQ)</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Navigatiemenu voor mobiel" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Robotiq Gripper</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Paginanavigatie">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Old Robotiq Gripper Control Scripts</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/documentation/gripper_control_old.md.txt" rel="nofollow"> Bekijk paginabron</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="old-robotiq-gripper-control-scripts">
+<h1>Old Robotiq Gripper Control Scripts<a class="headerlink" href="#old-robotiq-gripper-control-scripts" title="Link to this heading"></a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Waarschuwing</p>
+<p>This documentation is for the old gripper control scripts. Please refer to <a class="reference internal" href="gripper_control.html"><span class="std std-doc">gripper_control.md</span></a> for the latest version.</p>
+</div>
+<p>This directory contains Python scripts for controlling the Robotiq gripper in ROS2.</p>
+<section id="starten-controller">
+<h2>Starten Controller<a class="headerlink" href="#starten-controller" title="Link to this heading"></a></h2>
+<p>De grippercontroller kan als volgt gestart worden:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>robotiq_description<span class="w"> </span>robotiq_control.launch.py
+</pre></div>
+</div>
+<p>Of gebeurt automatisch bij het starten van de robot met <code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">launch</span> <span class="pre">my_robot_bringup</span> <span class="pre">bringup.launch.py</span></code>.</p>
+</section>
+<section id="available-scripts">
+<h2>Available Scripts<a class="headerlink" href="#available-scripts" title="Link to this heading"></a></h2>
+<section id="command-line-control-control-gripper">
+<h3>1. Command-Line Control (<code class="docutils literal notranslate"><span class="pre">control_gripper</span></code>)<a class="headerlink" href="#command-line-control-control-gripper" title="Link to this heading"></a></h3>
+<p>A command-line interface for gripper control.</p>
+<section id="usage">
+<h4>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Make sure the gripper controller is running first</span>
+ros2<span class="w"> </span>launch<span class="w"> </span>robotiq_description<span class="w"> </span>robotiq_control.launch.py
+
+<span class="c1"># In another terminal:</span>
+
+<span class="c1"># Activate the gripper</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--activate
+
+<span class="c1"># Open the gripper</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--open
+
+<span class="c1"># Close the gripper</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--close
+
+<span class="c1"># Move to specific position (0.0 = closed, 0.085 = open for 2F-85)</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--position<span class="w"> </span><span class="m">0</span>.04
+
+<span class="c1"># Set position with custom effort (in Newtons)</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--position<span class="w"> </span><span class="m">0</span>.02<span class="w"> </span>--effort<span class="w"> </span><span class="m">100</span>.0
+
+<span class="c1"># Activate and then open (multiple commands)</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--activate<span class="w"> </span>--open
+</pre></div>
+</div>
+</section>
+<section id="command-line-options">
+<h4>Command-Line Options<a class="headerlink" href="#command-line-options" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--activate</span></code>: Activate or reactivate the gripper</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--open</span></code>: Fully open the gripper</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--close</span></code>: Fully close the gripper</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--position</span> <span class="pre">METERS</span></code>: Move to specific position (0.0 to 0.085 for 2F-85, 0.0 to 0.140 for 2F-140)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--effort</span> <span class="pre">NEWTONS</span></code>: Set maximum effort/force (default: 50.0, max: 235.0)</p></li>
+</ul>
+</section>
+</section>
+<section id="gui-control-gripper-gui-py">
+<h3>2. GUI Control (<code class="docutils literal notranslate"><span class="pre">gripper_gui.py</span></code>)<a class="headerlink" href="#gui-control-gripper-gui-py" title="Link to this heading"></a></h3>
+<p>A graphical user interface for gripper control and monitoring.</p>
+<section id="id1">
+<h4>Usage<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Make sure the gripper controller is running</span>
+ros2<span class="w"> </span>launch<span class="w"> </span>robotiq_description<span class="w"> </span>robotiq_control.launch.py
+
+<span class="c1"># In another terminal, launch the GUI</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>gripper_gui.py
+</pre></div>
+</div>
+</section>
+<section id="gui-features">
+<h4>GUI Features<a class="headerlink" href="#gui-features" title="Link to this heading"></a></h4>
+<p><strong>Status Display:</strong></p>
+<ul class="simple">
+<li><p>Real-time current position display</p></li>
+<li><p>Position progress bar</p></li>
+<li><p>Velocity indicator</p></li>
+<li><p>Moving/Idle status with color indicator</p></li>
+<li><p>Last command result</p></li>
+</ul>
+<p><strong>Controls:</strong></p>
+<ul class="simple">
+<li><p>Activate button to initialize the gripper</p></li>
+<li><p>Position slider (0.0 to 0.085 meters)</p></li>
+<li><p>Effort/Force slider (10 to 235 Newtons)</p></li>
+<li><p>Send Command button</p></li>
+</ul>
+<p><strong>Quick Actions:</strong></p>
+<ul class="simple">
+<li><p>Fully Open: Opens gripper completely</p></li>
+<li><p>Half Open: Opens gripper to 50% position</p></li>
+<li><p>Fully Close: Closes gripper completely</p></li>
+<li><p>Gentle Close: Closes with low force (20N)</p></li>
+<li><p>Firm Grip: Closes with high force (100N)</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<section id="ros2-dependencies">
+<h3>ROS2 Dependencies<a class="headerlink" href="#ros2-dependencies" title="Link to this heading"></a></h3>
+<p>Make sure you have the following packages installed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>ros-<span class="si">${</span><span class="nv">ROS_DISTRO</span><span class="si">}</span>-control-msgs
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>ros-<span class="si">${</span><span class="nv">ROS_DISTRO</span><span class="si">}</span>-sensor-msgs
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>ros-<span class="si">${</span><span class="nv">ROS_DISTRO</span><span class="si">}</span>-std-srvs
+</pre></div>
+</div>
+</section>
+<section id="python-dependencies">
+<h3>Python Dependencies<a class="headerlink" href="#python-dependencies" title="Link to this heading"></a></h3>
+<p>The scripts use standard Python libraries included with ROS2:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rclpy</span></code> - ROS2 Python client library</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tkinter</span></code> - GUI library (for gripper_gui.py)</p></li>
+</ul>
+<p>Install tkinter if not already available:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3-tk
+</pre></div>
+</div>
+</section>
+</section>
+<section id="starting-the-gripper-system">
+<h2>Starting the Gripper System<a class="headerlink" href="#starting-the-gripper-system" title="Link to this heading"></a></h2>
+<section id="for-simulation-testing">
+<h3>For Simulation/Testing<a class="headerlink" href="#for-simulation-testing" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Terminal 1: Launch the gripper controllers</span>
+ros2<span class="w"> </span>launch<span class="w"> </span>robotiq_description<span class="w"> </span>robotiq_control.launch.py
+
+<span class="c1"># Terminal 2: Use the control scripts</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--activate<span class="w"> </span>--open
+<span class="c1"># OR</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>gripper_gui.py
+</pre></div>
+</div>
+</section>
+<section id="for-real-hardware">
+<h3>For Real Hardware<a class="headerlink" href="#for-real-hardware" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Terminal 1: Launch with hardware interface</span>
+ros2<span class="w"> </span>launch<span class="w"> </span>robotiq_description<span class="w"> </span>robotiq_control.launch.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>use_fake_hardware:<span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>robot_ip:<span class="o">=</span>&lt;GRIPPER_IP&gt;
+
+<span class="c1"># Terminal 2: Use the control scripts</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>gripper_gui.py
+</pre></div>
+</div>
+</section>
+</section>
+<section id="gripper-position-reference">
+<h2>Gripper Position Reference<a class="headerlink" href="#gripper-position-reference" title="Link to this heading"></a></h2>
+<section id="f-85-gripper">
+<h3>2F-85 Gripper<a class="headerlink" href="#f-85-gripper" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Fully Closed: <code class="docutils literal notranslate"><span class="pre">0.000</span> <span class="pre">m</span></code></p></li>
+<li><p>Half Open: <code class="docutils literal notranslate"><span class="pre">0.0425</span> <span class="pre">m</span></code></p></li>
+<li><p>Fully Open: <code class="docutils literal notranslate"><span class="pre">0.085</span> <span class="pre">m</span></code></p></li>
+</ul>
+</section>
+<section id="f-140-gripper">
+<h3>2F-140 Gripper<a class="headerlink" href="#f-140-gripper" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Fully Closed: <code class="docutils literal notranslate"><span class="pre">0.000</span> <span class="pre">m</span></code></p></li>
+<li><p>Half Open: <code class="docutils literal notranslate"><span class="pre">0.070</span> <span class="pre">m</span></code></p></li>
+<li><p>Fully Open: <code class="docutils literal notranslate"><span class="pre">0.140</span> <span class="pre">m</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="force-effort-guidelines">
+<h2>Force/Effort Guidelines<a class="headerlink" href="#force-effort-guidelines" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Light Grip (10-30 N)</strong>: For delicate objects</p></li>
+<li><p><strong>Medium Grip (30-80 N)</strong>: For most objects</p></li>
+<li><p><strong>Strong Grip (80-150 N)</strong>: For heavy or secure holding</p></li>
+<li><p><strong>Maximum (150-235 N)</strong>: For maximum holding force</p></li>
+</ul>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="action-server-not-available">
+<h3>“Action server not available”<a class="headerlink" href="#action-server-not-available" title="Link to this heading"></a></h3>
+<p>Make sure the controller is running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>control<span class="w"> </span>list_controllers
+</pre></div>
+</div>
+<p>You should see <code class="docutils literal notranslate"><span class="pre">robotiq_gripper_controller</span></code> in the list.</p>
+</section>
+<section id="activation-service-not-available">
+<h3>“Activation service not available”<a class="headerlink" href="#activation-service-not-available" title="Link to this heading"></a></h3>
+<p>Check if the activation controller is loaded:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>service<span class="w"> </span>list<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>reactivate
+</pre></div>
+</div>
+<p>You should see <code class="docutils literal notranslate"><span class="pre">/robotiq_activation_controller/reactivate_gripper</span></code>.</p>
+</section>
+<section id="gui-not-showing-position-updates">
+<h3>GUI not showing position updates<a class="headerlink" href="#gui-not-showing-position-updates" title="Link to this heading"></a></h3>
+<p>Verify joint states are being published:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>topic<span class="w"> </span><span class="nb">echo</span><span class="w"> </span>/joint_states
+</pre></div>
+</div>
+</section>
+<section id="permission-denied-when-running-scripts">
+<h3>Permission denied when running scripts<a class="headerlink" href="#permission-denied-when-running-scripts" title="Link to this heading"></a></h3>
+<p>The scripts are installed as ROS2 executables, so no chmod is needed when using <code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">run</span></code>.</p>
+</section>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<section id="example-1-pick-and-place-sequence">
+<h3>Example 1: Pick and Place Sequence<a class="headerlink" href="#example-1-pick-and-place-sequence" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Open gripper</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--open
+
+<span class="c1"># Close with medium force to grasp object</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--close<span class="w"> </span>--effort<span class="w"> </span><span class="m">60</span>.0
+
+<span class="c1"># (Move arm to new position - not shown)</span>
+
+<span class="c1"># Open to release</span>
+ros2<span class="w"> </span>run<span class="w"> </span>robotiq_app<span class="w"> </span>control_gripper<span class="w"> </span>--open
+</pre></div>
+</div>
+</section>
+<section id="example-2-precision-grip">
+<h3>Example 2: Precision Grip<a class="headerlink" href="#example-2-precision-grip" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="c1"># Activate</span>
+<span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;ros2&quot;</span><span class="p">,</span> <span class="s2">&quot;run&quot;</span><span class="p">,</span> <span class="s2">&quot;robotiq_app&quot;</span><span class="p">,</span> <span class="s2">&quot;control_gripper&quot;</span><span class="p">,</span> <span class="s2">&quot;--activate&quot;</span><span class="p">])</span>
+<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Open</span>
+<span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;ros2&quot;</span><span class="p">,</span> <span class="s2">&quot;run&quot;</span><span class="p">,</span> <span class="s2">&quot;robotiq_app&quot;</span><span class="p">,</span> <span class="s2">&quot;control_gripper&quot;</span><span class="p">,</span> <span class="s2">&quot;--open&quot;</span><span class="p">])</span>
+<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># Precision grip (20mm opening, gentle force)</span>
+<span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s2">&quot;ros2&quot;</span><span class="p">,</span> <span class="s2">&quot;run&quot;</span><span class="p">,</span> <span class="s2">&quot;robotiq_app&quot;</span><span class="p">,</span> <span class="s2">&quot;control_gripper&quot;</span><span class="p">,</span> <span class="s2">&quot;--position&quot;</span><span class="p">,</span> <span class="s2">&quot;0.020&quot;</span><span class="p">,</span> <span class="s2">&quot;--effort&quot;</span><span class="p">,</span> <span class="s2">&quot;25.0&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="ros2-topics-and-services">
+<h2>ROS2 Topics and Services<a class="headerlink" href="#ros2-topics-and-services" title="Link to this heading"></a></h2>
+<section id="subscribed-topics">
+<h3>Subscribed Topics<a class="headerlink" href="#subscribed-topics" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/joint_states</span></code> (sensor_msgs/JointState): Gripper joint states</p></li>
+</ul>
+</section>
+<section id="action-servers">
+<h3>Action Servers<a class="headerlink" href="#action-servers" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/robotiq_gripper_controller/gripper_cmd</span></code> (control_msgs/GripperCommand): Position control</p></li>
+</ul>
+</section>
+<section id="services">
+<h3>Services<a class="headerlink" href="#services" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/robotiq_activation_controller/reactivate_gripper</span></code> (std_srvs/Trigger): Gripper activation</p></li>
+</ul>
+</section>
+</section>
+<section id="additional-information">
+<h2>Additional Information<a class="headerlink" href="#additional-information" title="Link to this heading"></a></h2>
+<p>For more details about the Robotiq gripper driver, see the main <a class="reference internal" href="#README.md"><span class="xref myst">README.md</span></a> file.</p>
+<p>For hardware interface documentation, see the <a class="reference internal" href="#robotiq_driver/"><span class="xref myst">robotiq_driver</span></a> package.</p>
+<p>For URDF and visualization, see the <a class="reference internal" href="#robotiq_description/"><span class="xref myst">robotiq_description</span></a> package.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Voettekst">
+        <a href="gripper_control.html" class="btn btn-neutral float-left" title="Robotiq Gripper Besturingscripts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Vorige</a>
+        <a href="controller.html" class="btn btn-neutral float-right" title="ROS2 Grippercontroller" accesskey="n" rel="next">Volgende <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Gerard Harkema.</p>
+  </div>
+
+  Gebouwd met <a href="https://www.sphinx-doc.org/">Sphinx</a> met een
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thema</a>
+    geleverd door <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

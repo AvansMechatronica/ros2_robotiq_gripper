@@ -1,0 +1,205 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="nl" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ROS2 Grippercontroller &mdash; Robotiq Gripper 0.1 documentatie</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a57088fb"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script src="../_static/translations.js?v=e4d38c6a"></script>
+      <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Zoeken" href="../search.html" />
+    <link rel="next" title="Veelgestelde vragen (FAQ)" href="faq.html" />
+    <link rel="prev" title="Old Robotiq Gripper Control Scripts" href="gripper_control_old.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Robotiq Gripper
+              <img src="../_static/avans-hogeschool.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Zoek in documentatie" aria-label="Zoek in documentatie" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigatiemenu">
+              <p class="caption" role="heading"><span class="caption-text">Inhoudsopgave:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Inleiding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installatie van de Robotiq package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html#urdf-virtuele-gripper">URDF(virtuele gripper)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gripper.html">Aansluiten gripper op development computer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gripper_control.html">Robotiq Gripper Besturingscripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gripper_control_old.html">Old Robotiq Gripper Control Scripts</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ROS2 Grippercontroller</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ros-interfaces">ROS-interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#actionsserver">Actionsserver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#services">Services</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#set-gripper-force"><code class="docutils literal notranslate"><span class="pre">set_gripper_force</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#set-gripper-speed"><code class="docutils literal notranslate"><span class="pre">set_gripper_speed</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#gepubliceerd-topic">Gepubliceerd topic</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#snel-actievoorbeeld">Snel actievoorbeeld</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Veelgestelde vragen (FAQ)</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Navigatiemenu voor mobiel" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Robotiq Gripper</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Paginanavigatie">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ROS2 Grippercontroller</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/documentation/controller.md.txt" rel="nofollow"> Bekijk paginabron</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="ros2-grippercontroller">
+<h1>ROS2 Grippercontroller<a class="headerlink" href="#ros2-grippercontroller" title="Link to this heading"></a></h1>
+<p>De Grippercontroller is een ROS2-node die de communicatie tussen ROS2 en een Robotiq 2F-85 gripper verzorgt. De node vertaalt ROS2-acties en -services naar commando’s die de gripper kan begrijpen, en publiceert de status van de gripper via ROS2-topics. Hieronder worden de belangrijkste ROS2-interfaces van de Grippercontroller beschreven, inclusief de actionsserver, services en gepubliceerde topics.</p>
+<section id="ros-interfaces">
+<h2>ROS-interfaces<a class="headerlink" href="#ros-interfaces" title="Link to this heading"></a></h2>
+<section id="actionsserver">
+<h3>Actionsserver<a class="headerlink" href="#actionsserver" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Naam: <code class="docutils literal notranslate"><span class="pre">/robotiq_gripper_controller/gripper_cmd</span></code></p></li>
+<li><p>Type: <code class="docutils literal notranslate"><span class="pre">control_msgs/action/ParallelGripperCommand</span></code></p></li>
+</ul>
+<p>Implementatienotities:</p>
+<ul class="simple">
+<li><p>de node gebruikt de eerste waarde van <code class="docutils literal notranslate"><span class="pre">goal.command.position</span></code> en <code class="docutils literal notranslate"><span class="pre">goal.command.effort</span></code>,</p></li>
+<li><p>de positie wordt begrensd op <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">max_joint_position]</span></code>,</p></li>
+<li><p>de kracht wordt geïnterpreteerd als percentage en begrensd op <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">100]</span></code>.</p></li>
+</ul>
+</section>
+<section id="services">
+<h3>Services<a class="headerlink" href="#services" title="Link to this heading"></a></h3>
+<section id="set-gripper-force">
+<h4><code class="docutils literal notranslate"><span class="pre">set_gripper_force</span></code><a class="headerlink" href="#set-gripper-force" title="Link to this heading"></a></h4>
+<p>Type: <code class="docutils literal notranslate"><span class="pre">my_robotiq_controller/srv/SetForce</span></code></p>
+<p>Aanvraag:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">uint8</span> <span class="pre">force</span></code></p></li>
+</ul>
+<p>Antwoord:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bool</span> <span class="pre">success</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">message</span></code></p></li>
+</ul>
+<p>Voorbeeld:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>service<span class="w"> </span>call<span class="w"> </span>/set_gripper_force<span class="w"> </span>my_robotiq_controller/srv/SetForce<span class="w"> </span><span class="s2">&quot;{force: 128}&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="set-gripper-speed">
+<h4><code class="docutils literal notranslate"><span class="pre">set_gripper_speed</span></code><a class="headerlink" href="#set-gripper-speed" title="Link to this heading"></a></h4>
+<p>Type: <code class="docutils literal notranslate"><span class="pre">my_robotiq_controller/srv/SetSpeed</span></code></p>
+<p>Aanvraag:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">uint8</span> <span class="pre">speed</span></code></p></li>
+</ul>
+<p>Antwoord:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bool</span> <span class="pre">success</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">string</span> <span class="pre">message</span></code></p></li>
+</ul>
+<p>Voorbeeld:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>service<span class="w"> </span>call<span class="w"> </span>/set_gripper_speed<span class="w"> </span>my_robotiq_controller/srv/SetSpeed<span class="w"> </span><span class="s2">&quot;{speed: 128}&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="gepubliceerd-topic">
+<h3>Gepubliceerd topic<a class="headerlink" href="#gepubliceerd-topic" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">joint_states</span></code> (<code class="docutils literal notranslate"><span class="pre">sensor_msgs/msg/JointState</span></code>)</p></li>
+</ul>
+<p>De node publiceert zes gekoppelde Robotiq-vingergewrichten voor URDF-compatibele visualisatie/besturing.</p>
+</section>
+</section>
+<section id="snel-actievoorbeeld">
+<h2>Snel actievoorbeeld<a class="headerlink" href="#snel-actievoorbeeld" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>action<span class="w"> </span>send_goal<span class="w"> </span>/robotiq_gripper_controller/gripper_cmd<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>control_msgs/action/ParallelGripperCommand<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;{command: {position: [0.04], effort: [60.0]}}&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Voettekst">
+        <a href="gripper_control_old.html" class="btn btn-neutral float-left" title="Old Robotiq Gripper Control Scripts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Vorige</a>
+        <a href="faq.html" class="btn btn-neutral float-right" title="Veelgestelde vragen (FAQ)" accesskey="n" rel="next">Volgende <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Gerard Harkema.</p>
+  </div>
+
+  Gebouwd met <a href="https://www.sphinx-doc.org/">Sphinx</a> met een
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thema</a>
+    geleverd door <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

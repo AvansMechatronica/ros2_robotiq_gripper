@@ -1,0 +1,174 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="nl" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installatie van de Robotiq package &mdash; Robotiq Gripper 0.1 documentatie</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a57088fb"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script src="../_static/translations.js?v=e4d38c6a"></script>
+      <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Zoeken" href="../search.html" />
+    <link rel="next" title="Aansluiten gripper op development computer" href="gripper.html" />
+    <link rel="prev" title="Inleiding" href="overview.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Robotiq Gripper
+              <img src="../_static/avans-hogeschool.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Zoek in documentatie" aria-label="Zoek in documentatie" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigatiemenu">
+              <p class="caption" role="heading"><span class="caption-text">Inhoudsopgave:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Inleiding</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installatie van de Robotiq package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#clone-repository">Clone repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-workspace">Build workspace</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#urdf-virtuele-gripper">URDF(virtuele gripper)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gripper.html">Aansluiten gripper op development computer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gripper_control.html">Robotiq Gripper Besturingscripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gripper_control_old.html">Old Robotiq Gripper Control Scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="controller.html">ROS2 Grippercontroller</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Veelgestelde vragen (FAQ)</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Navigatiemenu voor mobiel" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Robotiq Gripper</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Paginanavigatie">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installatie van de Robotiq package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/documentation/install.md.txt" rel="nofollow"> Bekijk paginabron</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="installatie-van-de-robotiq-package">
+<h1>Installatie van de Robotiq package<a class="headerlink" href="#installatie-van-de-robotiq-package" title="Link to this heading"></a></h1>
+<section id="clone-repository">
+<h2>Clone repository<a class="headerlink" href="#clone-repository" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>~/my_ur_ws/src
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/AvansMechatronica/ros2_robotiq_gripper.git
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/tylerjw/serial.git<span class="w"> </span>-b<span class="w"> </span>ros2
+</pre></div>
+</div>
+</section>
+<section id="build-workspace">
+<h2>Build workspace<a class="headerlink" href="#build-workspace" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Build the workspace</span>
+<span class="n">cd</span> <span class="o">~/</span><span class="n">my_ur_ws</span>
+<span class="n">colcon</span> <span class="n">build</span> <span class="o">--</span><span class="n">symlink</span><span class="o">-</span><span class="n">install</span>
+<span class="n">source</span> <span class="n">install</span><span class="o">/</span><span class="n">setup</span><span class="o">.</span><span class="n">bash</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="urdf-virtuele-gripper">
+<h1>URDF(virtuele gripper)<a class="headerlink" href="#urdf-virtuele-gripper" title="Link to this heading"></a></h1>
+<p>Voeg een virtuele gripper toe aan je URDF bestand van je project:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="cp">&lt;?xml version=&quot;1.0&quot;?&gt;</span>
+<span class="nt">&lt;robot</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;example_robot&quot;</span><span class="w"> </span><span class="na">xmlns:xacro=</span><span class="s">&quot;http://www.ros.org/wiki/xacro&quot;</span><span class="nt">&gt;</span>
+
+<span class="w">    </span><span class="cm">&lt;!--</span>
+<span class="cm">    Inhoud bestaande URDF file</span>
+<span class="cm">    --&gt;</span>
+
+<span class="w">    </span><span class="cm">&lt;!-- parameters --&gt;</span>
+<span class="w">    </span><span class="nt">&lt;xacro:arg</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;use_fake_hardware&quot;</span><span class="w"> </span><span class="na">default=</span><span class="s">&quot;true&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;xacro:arg</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;com_port&quot;</span><span class="w"> </span><span class="na">default=</span><span class="s">&quot;/dev/ttyUSB0&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
+
+<span class="w">    </span><span class="cm">&lt;!-- Import macros --&gt;</span>
+<span class="w">    </span><span class="nt">&lt;xacro:include</span><span class="w"> </span><span class="na">filename=</span><span class="s">&quot;$(find robotiq_description)/urdf/robotiq_2f_85_macro.urdf.xacro&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
+
+<span class="w">    </span><span class="nt">&lt;xacro:robotiq_gripper</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;RobotiqGripperHardwareInterface&quot;</span><span class="w"> </span><span class="na">prefix=</span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="na">parent=</span><span class="s">&quot;&lt;link naar de end-effector&gt;&quot;</span><span class="w"> </span><span class="na">use_fake_hardware=</span><span class="s">&quot;$(arg use_fake_hardware)&quot;</span><span class="w"> </span><span class="na">com_port=</span><span class="s">&quot;$(arg com_port)&quot;</span><span class="nt">&gt;</span>
+<span class="w">        </span><span class="nt">&lt;origin</span><span class="w"> </span><span class="na">xyz=</span><span class="s">&quot;0 0 0&quot;</span><span class="w"> </span><span class="na">rpy=</span><span class="s">&quot;0 0 0&quot;</span><span class="w"> </span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/xacro:robotiq_gripper&gt;</span>
+
+<span class="nt">&lt;/robot&gt;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Notitie</p>
+<p>Als je de gripper aan de robot hebt toegevoegd en je maak gebruik van de <code class="docutils literal notranslate"><span class="pre">Movegroup</span></code> interface, zorg er dan voor de je een dummy  <code class="docutils literal notranslate"><span class="pre">Planning</span> <span class="pre">Group</span></code> toevoegt aan je <code class="docutils literal notranslate"><span class="pre">moveit_config</span></code> package. Deze groep heeft alle joints van de gripper nodig. Hierdoor blijft de <code class="docutils literal notranslate"><span class="pre">Movegroup</span></code> interface werken.
+Je kunt in geen geval de gripper vanuit de <code class="docutils literal notranslate"><span class="pre">Movegroup</span></code> interface aansturen, maar zonder deze dummy groep werkt de <code class="docutils literal notranslate"><span class="pre">Movegroup</span></code> interface helemaal niet meer.</p>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Voettekst">
+        <a href="overview.html" class="btn btn-neutral float-left" title="Inleiding" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Vorige</a>
+        <a href="gripper.html" class="btn btn-neutral float-right" title="Aansluiten gripper op development computer" accesskey="n" rel="next">Volgende <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Gerard Harkema.</p>
+  </div>
+
+  Gebouwd met <a href="https://www.sphinx-doc.org/">Sphinx</a> met een
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thema</a>
+    geleverd door <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
