@@ -24,6 +24,11 @@ public:
   ~RobotiqControllerNode() override;
 
 private:
+  void activate_gripper();
+  void run_startup_homing();
+  void command_raw_position(uint8_t raw_position, const std::string& label);
+  bool wait_for_position(uint8_t target_position, const std::string& label);
+
   void timer_callback();
   void handle_set_joint_state(const std_msgs::msg::Float64::SharedPtr msg);
 
@@ -42,6 +47,10 @@ private:
   double timeout_;
   double update_rate_;
   double max_joint_position_;
+  bool startup_homing_;
+  double startup_timeout_;
+  uint8_t startup_speed_;
+  uint8_t startup_force_;
   int slave_address_;
   double commanded_position_;
   double commanded_effort_;

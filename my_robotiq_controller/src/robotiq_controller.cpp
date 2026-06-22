@@ -26,6 +26,12 @@ RobotiqControllerNode::RobotiqControllerNode()
   slave_address_ = declare_parameter<int>("slave_address", 9);
   update_rate_ = declare_parameter<double>("update_rate", 50.0);
   max_joint_position_ = declare_parameter<double>("max_joint_position", 0.085);
+  startup_homing_ = declare_parameter<bool>("startup_homing", true);
+  startup_timeout_ = declare_parameter<double>("startup_timeout", 8.0);
+  const auto startup_speed_param = declare_parameter<int>("startup_speed", 128);
+  const auto startup_force_param = declare_parameter<int>("startup_force", 80);
+  startup_speed_ = static_cast<uint8_t>(std::clamp<int>(startup_speed_param, 0, 255));
+  startup_force_ = static_cast<uint8_t>(std::clamp<int>(startup_force_param, 0, 255));
 
   if (update_rate_ <= 0.0) {
     RCLCPP_WARN(
@@ -67,15 +73,12 @@ RobotiqControllerNode::RobotiqControllerNode()
     throw std::runtime_error("Failed to connect to the gripper");
   }
 
-  {
-    std::lock_guard<std::mutex> lock(driver_mutex_);
-    driver_->activate();
-  }
+  activate_gripper();
 
 
   // Publish complete six-joint kinematic state compatible with the Robotiq
   // URDF chain used by RViz and downstream controllers.
-  joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/robotiq_gripper_controller/joint_states", 10);
+  joint_state_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", 10);
 
   // Service endpoint to update force register without issuing a full action goal.
   set_force_service_ = this->create_service<my_robotiq_controller::srv::SetForce>(
@@ -174,7 +177,7 @@ RobotiqControllerNode::RobotiqControllerNode()
     std::chrono::duration<double>(1.0 / update_rate_),
     std::bind(&RobotiqControllerNode::timer_callback, this));
 
-  RCLCPP_INFO(this->get_logger(), "RobotiqControllerNode initialized");
+  RCLCPP_INFO(this->get_logger(), "RobotiqControllerNode ready");
 }
 
 RobotiqControllerNode::~RobotiqControllerNode()
@@ -193,6 +196,113 @@ RobotiqControllerNode::~RobotiqControllerNode()
   } catch (const std::exception & e) {
     RCLCPP_WARN(this->get_logger(), "Destructor cleanup failed: %s", e.what());
   }
+}
+
+void RobotiqControllerNode::activate_gripper()
+{
+  RCLCPP_INFO(this->get_logger(), "Connecting to Robotiq gripper succeeded, activating...");
+
+  {
+    std::lock_guard<std::mutex> lock(driver_mutex_);
+    driver_->deactivate();
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+  {
+    std::lock_guard<std::mutex> lock(driver_mutex_);
+    driver_->activate();
+    driver_->set_speed(startup_speed_);
+    driver_->set_force(startup_force_);
+  }
+
+  // Force one status read after activation. If activation only wrote registers
+  // but the gripper is not responding correctly, this throws and the node exits.
+  {
+    std::lock_guard<std::mutex> lock(driver_mutex_);
+    const auto raw_position = driver_->get_gripper_position();
+    RCLCPP_INFO(
+      this->get_logger(),
+      "Robotiq activated, raw position feedback=%u",
+      static_cast<unsigned>(raw_position));
+  }
+
+  if (startup_homing_) {
+    run_startup_homing();
+  }
+}
+
+void RobotiqControllerNode::run_startup_homing()
+{
+  RCLCPP_INFO(this->get_logger(), "Running Robotiq startup homing: open -> close -> open");
+  command_raw_position(0x00, "startup open");
+  command_raw_position(0xFF, "startup close");
+  command_raw_position(0x00, "startup reopen");
+  commanded_position_ = max_joint_position_;
+  RCLCPP_INFO(this->get_logger(), "Robotiq startup homing completed");
+}
+
+void RobotiqControllerNode::command_raw_position(uint8_t raw_position, const std::string& label)
+{
+  {
+    std::lock_guard<std::mutex> lock(driver_mutex_);
+    driver_->set_gripper_position(raw_position);
+  }
+
+  if (!wait_for_position(raw_position, label)) {
+    throw std::runtime_error("Robotiq " + label + " did not complete before timeout");
+  }
+}
+
+bool RobotiqControllerNode::wait_for_position(uint8_t target_position, const std::string& label)
+{
+  constexpr int kTolerance = 8;
+  const auto start_time = std::chrono::steady_clock::now();
+  bool saw_motion = false;
+
+  while (rclcpp::ok()) {
+    uint8_t raw_position = 0;
+    bool moving = false;
+    {
+      std::lock_guard<std::mutex> lock(driver_mutex_);
+      raw_position = driver_->get_gripper_position();
+      moving = driver_->gripper_is_moving();
+    }
+
+    saw_motion = saw_motion || moving;
+    const auto error = std::abs(static_cast<int>(raw_position) - static_cast<int>(target_position));
+    if (error <= kTolerance && (!moving || saw_motion)) {
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Robotiq %s reached raw position %u",
+        label.c_str(),
+        static_cast<unsigned>(raw_position));
+      return true;
+    }
+
+    if (!moving && saw_motion) {
+      RCLCPP_INFO(
+        this->get_logger(),
+        "Robotiq %s stopped at raw position %u",
+        label.c_str(),
+        static_cast<unsigned>(raw_position));
+      return true;
+    }
+
+    if ((std::chrono::steady_clock::now() - start_time) > std::chrono::duration<double>(startup_timeout_)) {
+      RCLCPP_ERROR(
+        this->get_logger(),
+        "Robotiq %s timed out. Last raw position=%u target=%u moving=%s",
+        label.c_str(),
+        static_cast<unsigned>(raw_position),
+        static_cast<unsigned>(target_position),
+        moving ? "true" : "false");
+      return false;
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+
+  return false;
 }
 
 void RobotiqControllerNode::timer_callback()
@@ -440,7 +550,11 @@ int main(int argc, char * argv[])
 {
   // Standard ROS 2 node lifecycle.
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<RobotiqControllerNode>());
+  try {
+    rclcpp::spin(std::make_shared<RobotiqControllerNode>());
+  } catch (const std::exception & e) {
+    RCLCPP_FATAL(rclcpp::get_logger("robotiq_controller"), "Startup failed: %s", e.what());
+  }
   rclcpp::shutdown();
   return 0;
 }
